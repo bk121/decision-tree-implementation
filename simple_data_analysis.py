@@ -135,4 +135,7 @@ print("     ", proportion)
         - they could be part of a continuous number line
     - the fact the range of attributes isn't consistent in full and sub may indicate they arn't catagorical
     
-1.3 - """
+1.3 - the class distribution has been effected - less Gs, more Os in noisy
+    - the data agrees to around 84% what the classes for the attributes should be
+    
+"""
