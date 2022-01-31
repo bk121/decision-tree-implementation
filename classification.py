@@ -79,11 +79,11 @@ class DecisionTreeClassifier(object):
         return predictions
 
 
-x_sub, y_sub = read_data("data/" + files[1])
+x_sub, y_sub = read_data("data/train_sub.txt")
 x_val, y_val = read_data("data/validation.txt")
 classifier = DecisionTreeClassifier()
 classifier.fit(x_sub, y_sub)
 
 predictions = classifier.predict(x_val)
 
-print((y_val == predictions).size / y_val.size)
+print(np.count_nonzero((y_val == predictions)) / y_val.size)
