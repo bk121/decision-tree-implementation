@@ -10,13 +10,14 @@ class Node:
         left_attr, right_attr, left_labels, right_labels = self.__get_split(
             attributes, labels, self.split_attr, self.split_val
         )
-        print(right_labels.size)
         self.left_branch = (
-            Node(left_attr, left_labels) if left_labels.size > 20 else Leaf(left_labels)
+            Node(left_attr, left_labels)
+            if (left_labels.size > 2 and len(np.unique(left_labels)) > 1)
+            else Leaf(left_labels)
         )
         self.right_branch = (
             Node(right_attr, right_labels)
-            if right_labels.size > 20
+            if (right_labels.size > 2 and len(np.unique(right_labels)) > 1)
             else Leaf(right_labels)
         )
 
