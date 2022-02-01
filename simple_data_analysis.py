@@ -73,7 +73,8 @@ for j, (file, x, y) in enumerate(zip(files, x_array, y_array)):
             "      Range of values in attribute",
             i,
             ":",
-            np.max(column) - np.min(column),
+            np.max(column) - np.min(column), "\t with max: ", np.max(column),
+            " and min: ", np.min(column)
         )
         ranges[i] = np.max(column) - np.min(column)
     range_plot[j] = ranges
@@ -101,6 +102,7 @@ for row, val in zip(x_full, y_full):
 proportion = crossover / np.size(y_array[0])
 
 print("     ", proportion)
+
 
 
 # y_nums = []
