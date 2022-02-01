@@ -10,15 +10,13 @@ class Node:
         left_attr, right_attr, left_labels, right_labels = self.__get_split(
             attributes, labels, self.split_attr, self.split_val
         )
-
+        print(right_labels.size)
         self.left_branch = (
-            Node(left_attr, left_labels)
-            if left_labels.size > 400
-            else Leaf(left_labels)
+            Node(left_attr, left_labels) if left_labels.size > 20 else Leaf(left_labels)
         )
         self.right_branch = (
             Node(right_attr, right_labels)
-            if right_labels.size > 400
+            if right_labels.size > 20
             else Leaf(right_labels)
         )
 
@@ -33,7 +31,7 @@ class Node:
         unique_labels, counts = np.unique(labels, return_counts=True)
         p_x = counts / labels.size
         for p in p_x:
-            total += p * np.log2(p)
+            total += p * np.log2(p + 1e-9)  # <---- TED ADDED THIS SO NO LOG(0)
         return -total
 
     def __evaluate_information_gain(self, attributes, labels, split_attr, split_val):
@@ -47,16 +45,15 @@ class Node:
 
         ig = (
             full_data_entropy
-            - left_labels.size / labels.size * left_data_entropy
-            - right_labels.size / labels.size * right_data_entropy
+            - (left_labels.size / labels.size) * left_data_entropy
+            - (right_labels.size / labels.size) * right_data_entropy
         )
-
         return ig
 
     def __find_best_split(self, attributes, labels):
-        max_IG_entropy = 0
-        max_IG_attribute = 0
-        max_IG_split_val = 0
+        max_IG_entropy = -1
+        max_IG_attribute = -1
+        max_IG_split_val = -1
 
         for split_attr in range(np.shape(attributes)[1]):
             for split_val in range(
