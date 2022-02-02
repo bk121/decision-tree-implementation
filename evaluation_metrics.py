@@ -46,3 +46,35 @@ def precision(gold_labels, prediction_labels):
     macro_p = float(p.sum()/len(p))
 
     return(p, macro_p)
+
+def recall(gold_labels, prediction_labels):
+
+    confusion = confusion_matrix(gold_labels, prediction_labels)
+    class_labels = np.unique(np.concatenate((gold_labels, prediction_labels)))
+
+    # create a recall vector (or 1D array) for each class' recall value
+    r = np.zeros([len(class_labels),]).reshape(len(class_labels),)
+    for i in range(len(np.unique(gold_labels))):
+        r[i,] = confusion[i][i]/(confusion[i,:].sum())
+
+    # macro-averaged recall
+    macro_r = r.sum()/len(r)
+
+    return(r, macro_r)
+
+def f1_score(gold_labels, prediction_labels):
+
+    (precisions, macro_p) = precision(gold_labels, prediction_labels)
+    (recalls, macro_r) = recall(gold_labels, prediction_labels)
+
+    assert len(precisions) == len(recalls)
+
+    f = np.zeros((len(precisions), ))
+    for i in range(len(np.unique(gold_labels))):
+        if(precisions[i] + recalls[i]) > 0:
+            f[i,] = (2 * precisions[i] * recalls[i])/(precisions[i] + recalls[i])
+
+    macro_f = f.sum()/len(f)
+
+    return(f, macro_f)
+    
