@@ -10,6 +10,7 @@
 import numpy as np
 from read_data import read_data
 from node import Node
+from evaluation_metrics import confusion_matrix, accuracy
 
 files = ["train_full.txt", "train_sub.txt", "train_noisy.txt"]
 
@@ -86,4 +87,7 @@ classifier.fit(x_sub, y_sub)
 
 predictions = classifier.predict(x_val)
 
-print(np.count_nonzero((y_val == predictions)) / y_val.size)
+confusion = confusion_matrix(y_val, predictions)
+print(accuracy(y_val, predictions))
+
+#print(np.count_nonzero((y_val == predictions)) / y_val.size)
