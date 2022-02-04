@@ -43,7 +43,7 @@ class DecisionTreeClassifier(object):
         self.max_depth = max_depth
         self.root = None
 
-    class _Node(object):
+    class Node(object):
         """Node of decision tree
 
         Attributes:
@@ -60,6 +60,7 @@ class DecisionTreeClassifier(object):
         """
 
         def __init__(self, entropy, class_distribution, predicted_class):
+            self.leaf = False
             self.entropy = entropy
             self.class_distribution = class_distribution
             self.predicted_class = predicted_class
@@ -116,6 +117,35 @@ class DecisionTreeClassifier(object):
             return node.predicted_class
 
         return np.array([_predict(row) for row in x])
+
+    def prune(self, x, y):
+        node = self.root
+        self._reccursively_prune(x, y, node)
+
+    def _reccursively_prune(self, x, y, node):
+        if node.left_branch.leaf and node.right_branch.leaf:
+            prior_acc = self._accuracy(x, y)
+            left_branch = node.left_branch
+            right_branch = node.right_branch
+            node.left_branch = None
+            node.right_branch = None
+            node.leaf = True
+            after_acc = self._accuracy(x, y)
+            if after_acc <= prior_acc:
+                node.left_branch = left_branch
+                node.right_branch = right_branch
+            return
+        if not node.left_branch.leaf:
+            self._reccursively_prune(x, y, node.left_branch)
+        if not node.right_branch.leaf:
+            self._reccursively_prune(x, y, node.right_branch)
+
+    def _accuracy(self, x, y):
+        preds = self.predict(x)
+        try:
+            return np.sum(y == preds) / len(y)
+        except ZeroDivisionError:
+            return 0
 
     def _evaluate_entropy(self, y):
         """Evaluates the entropy of a dataset
@@ -230,7 +260,7 @@ class DecisionTreeClassifier(object):
         classes, counts = np.unique(y, return_counts=True)
         predicted_class = y[np.argmax(counts)]
         class_dist = np.asarray((classes, counts)).T
-        node = self._Node(
+        node = self.Node(
             entropy=self._evaluate_entropy(y),
             class_distribution=class_dist,
             predicted_class=predicted_class,
@@ -245,14 +275,24 @@ class DecisionTreeClassifier(object):
                 node.split_attribute = split_attr
                 node.left_branch = self._build_tree(x_left, y_left, depth + 1)
                 node.right_branch = self._build_tree(x_right, y_right, depth + 1)
+        else:
+            node.leaf = True
         return node
 
 
-x_full, y_full = read_data("data/train_full.txt")
+x_full, y_full = read_data("data/train_sub.txt")
 x_val, y_val = read_data("data/validation.txt")
 classifier = DecisionTreeClassifier()
 classifier.fit(x_full, y_full)
 
+predictions = classifier.predict(x_val)
+print("Confusion Matrix:\n", confusion_matrix(y_val, predictions))
+print("\nAccuracy:\n", accuracy(y_val, predictions))
+print("\nPrecision:\n", precision(y_val, predictions))
+print("\nRecall:\n", recall(y_val, predictions))
+print("\nF1_Score:\n", f1_score(y_val, predictions))
+
+classifier.prune(x_val, y_val)
 predictions = classifier.predict(x_val)
 print("Confusion Matrix:\n", confusion_matrix(y_val, predictions))
 print("\nAccuracy:\n", accuracy(y_val, predictions))
