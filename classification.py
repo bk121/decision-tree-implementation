@@ -15,6 +15,9 @@ Summary of File:
 
 import numpy as np
 from read_data import read_data
+from random import sample, randint, seed, choices
+import math
+from statistics import mode
 from evaluation_metrics import accuracy, confusion_matrix, precision, recall, f1_score
 
 
@@ -284,25 +287,93 @@ class DecisionTreeClassifier(object):
         return node
 
 
-x_full, y_full = read_data("data/train_sub.txt")
+class RandomForest(object):
+
+
+    def fit(self, x, y, number_of_trees):
+        self.x = x
+        self.y = y
+        self.number_of_trees = number_of_trees
+
+        num_of_attributes = len(range(np.shape(x)[1]))
+
+        # number of attributes is 10% of total possible
+        num_of_attributes_in_each_tree = math.ceil(num_of_attributes/8)
+
+        # create list of trees (forest)
+        self.list_of_trees = []
+
+        for i in range(number_of_trees):
+
+            seed()
+            attributes_subset = sample((range(np.shape(x)[1])), num_of_attributes_in_each_tree)
+            attributes_subset = np.asarray(attributes_subset)
+        
+            sample_indices = choices(range(len(x)), k = len(x))
+
+            # cut down to just chosen columns
+            x_sample = x[:,attributes_subset]
+
+            # change to sample indices
+            x_sample = x[sample_indices]
+            y_sample = y[sample_indices]
+            
+            self.list_of_trees.append(DecisionTreeClassifier())
+            self.list_of_trees[i].fit(x_sample, y_sample)
+
+
+    def predict(self, x):
+
+        list_of_trees_predictions = np.empty([self.number_of_trees,len(x)], dtype=str)
+
+        for i in range(self.number_of_trees):
+            preds = self.list_of_trees[i].predict(x)
+            for j, pred in enumerate(preds):
+                list_of_trees_predictions[i][j] = pred
+
+        output = np.empty((len(list_of_trees_predictions[0,:])), dtype=str)
+
+        for i in range(len(x)):
+            output[i] = mode(list_of_trees_predictions[:,i])
+
+        return output
+
+          
+
+
+x_full, y_full = read_data("data/train_full.txt")
 x_test, y_test = read_data("data/test.txt")
 x_val, y_val = read_data("data/validation.txt")
 classifier = DecisionTreeClassifier()
 classifier.fit(x_full, y_full)
 
+forest = RandomForest()
+forest.fit(x_full, y_full, 128)
+forest_predictions = forest.predict(x_test)
+
+print("\n ------- RANDOM FOREST ------- \n")
+print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
+print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
+# print("\nPrecision:\n", precision(y_test, forest_predictions))
+# print("\nRecall:\n", recall(y_test, forest_predictions))
+# print("\nF1_Score:\n", f1_score(y_test, forest_predictions))
+# print("\nNode Count:\n", classifier.node_count)
+
+print("\n ------- SIMPLE BINARY TREE ------- \n")
 predictions = classifier.predict(x_test)
 print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
 print("\nAccuracy:\n", accuracy(y_test, predictions))
-print("\nPrecision:\n", precision(y_test, predictions))
-print("\nRecall:\n", recall(y_test, predictions))
-print("\nF1_Score:\n", f1_score(y_test, predictions))
-print("\nNode Count:\n", classifier.node_count)
+# print("\nPrecision:\n", precision(y_test, predictions))
+# print("\nRecall:\n", recall(y_test, predictions))
+# print("\nF1_Score:\n", f1_score(y_test, predictions))
+# print("\nNode Count:\n", classifier.node_count)
 
+print("\n ------- PRUNED BINARY TREE ------- \n")
 classifier.prune(x_val, y_val)
 predictions = classifier.predict(x_test)
 print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
 print("\nAccuracy:\n", accuracy(y_test, predictions))
-print("\nPrecision:\n", precision(y_test, predictions))
-print("\nRecall:\n", recall(y_test, predictions))
-print("\nF1_Score:\n", f1_score(y_test, predictions))
-print("\nNode Count:\n", classifier.node_count)
+# print("\nPrecision:\n", precision(y_test, predictions))
+# print("\nRecall:\n", recall(y_test, predictions))
+# print("\nF1_Score:\n", f1_score(y_test, predictions))
+# print("\nNode Count:\n", classifier.node_count)
