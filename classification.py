@@ -42,6 +42,7 @@ class DecisionTreeClassifier(object):
         self.is_trained = False
         self.max_depth = max_depth
         self.root = None
+        self.node_count = 0
 
     class Node(object):
         """Node of decision tree
@@ -131,9 +132,11 @@ class DecisionTreeClassifier(object):
             node.right_branch = None
             node.leaf = True
             after_acc = self._accuracy(x, y)
+            self.node_count -= 2
             if after_acc <= prior_acc:
                 node.left_branch = left_branch
                 node.right_branch = right_branch
+                self.node_count += 2
             return
         if not node.left_branch.leaf:
             self._reccursively_prune(x, y, node.left_branch)
@@ -265,6 +268,7 @@ class DecisionTreeClassifier(object):
             class_distribution=class_dist,
             predicted_class=predicted_class,
         )
+        self.node_count += 1
         if depth < self.max_depth and len(np.unique(y)) > 1:
             split_attr, split_val = self._find_best_split(x, y)
             if split_attr != None:
@@ -281,21 +285,24 @@ class DecisionTreeClassifier(object):
 
 
 x_full, y_full = read_data("data/train_sub.txt")
+x_test, y_test = read_data("data/test.txt")
 x_val, y_val = read_data("data/validation.txt")
 classifier = DecisionTreeClassifier()
 classifier.fit(x_full, y_full)
 
-predictions = classifier.predict(x_val)
-print("Confusion Matrix:\n", confusion_matrix(y_val, predictions))
-print("\nAccuracy:\n", accuracy(y_val, predictions))
-print("\nPrecision:\n", precision(y_val, predictions))
-print("\nRecall:\n", recall(y_val, predictions))
-print("\nF1_Score:\n", f1_score(y_val, predictions))
+predictions = classifier.predict(x_test)
+print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
+print("\nAccuracy:\n", accuracy(y_test, predictions))
+print("\nPrecision:\n", precision(y_test, predictions))
+print("\nRecall:\n", recall(y_test, predictions))
+print("\nF1_Score:\n", f1_score(y_test, predictions))
+print("\nNode Count:\n", classifier.node_count)
 
 classifier.prune(x_val, y_val)
-predictions = classifier.predict(x_val)
-print("Confusion Matrix:\n", confusion_matrix(y_val, predictions))
-print("\nAccuracy:\n", accuracy(y_val, predictions))
-print("\nPrecision:\n", precision(y_val, predictions))
-print("\nRecall:\n", recall(y_val, predictions))
-print("\nF1_Score:\n", f1_score(y_val, predictions))
+predictions = classifier.predict(x_test)
+print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
+print("\nAccuracy:\n", accuracy(y_test, predictions))
+print("\nPrecision:\n", precision(y_test, predictions))
+print("\nRecall:\n", recall(y_test, predictions))
+print("\nF1_Score:\n", f1_score(y_test, predictions))
+print("\nNode Count:\n", classifier.node_count)
