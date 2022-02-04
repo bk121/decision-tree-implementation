@@ -24,7 +24,7 @@ def confusion_matrix(gold_labels, prediction_labels, class_labels=None):
     return confusion
 
 def accuracy(gold_labels, prediction_labels):
-    
+
     assert len(gold_labels) == len(prediction_labels)
 
     try:
