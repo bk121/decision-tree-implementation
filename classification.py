@@ -13,8 +13,6 @@ Summary of File:
         Contains node class for binary decision tree classifier.
 """
 
-
-from attr import attr
 import numpy as np
 from read_data import read_data
 from evaluation_metrics import accuracy, confusion_matrix, precision, recall, f1_score
