@@ -14,6 +14,7 @@ Summary of File:
 """
 
 import numpy as np
+from itertools import combinations
 from read_data import read_data
 from random import sample, randint, seed, choices
 import math
@@ -69,9 +70,8 @@ class DecisionTreeClassifier(object):
             self.class_distribution = class_distribution
             self.predicted_class = predicted_class
             self.split_attribute = 0
-            self.split_value = 0
-            self.left_branch = None
-            self.right_branch = None
+            self.split_values = []
+            self.nodes = None
 
     def fit(self, x, y):
         """Constructs a decision tree classifier from data
@@ -112,12 +112,12 @@ class DecisionTreeClassifier(object):
 
         def _predict(row):
             node = self.root
-            while node.left_branch:
-                node = (
-                    node.left_branch
-                    if row[node.split_attribute] < node.split_value
-                    else node.right_branch
-                )
+            while node.nodes:
+                node = node.nodes[-1]
+                for i, split_val in enumerate(node.split_values):
+                    if row[node.split_attribute] < split_val:
+                        node = node.nodes[i]
+
             return node.predicted_class
 
         return np.array([_predict(row) for row in x])
@@ -168,7 +168,7 @@ class DecisionTreeClassifier(object):
         entropy = -np.sum(p_x * np.log2(p_x + 1e-20))
         return entropy
 
-    def _evaluate_information_gain(self, current_entropy, y_left, y_right):
+    def _evaluate_information_gain(self, current_entropy, split_y):
         """Evaluates the information gain of a specified split
 
         Args:
@@ -179,19 +179,18 @@ class DecisionTreeClassifier(object):
         Returns:
             int: Information gain of the division
         """
-        left_data_entropy = self._evaluate_entropy(y_left)
-        right_data_entropy = self._evaluate_entropy(y_right)
-        n_left = y_left.size
-        n_right = y_right.size
-        n_total = n_left + n_right
-        ig = (
-            current_entropy
-            - (n_left / n_total) * left_data_entropy
-            - (n_right / n_total) * right_data_entropy
-        )
+        entropies = []
+        sizes = []
+        for y_sub in split_y:
+            entropies.append(self._evaluate_entropy(y_sub))
+            sizes.append(y_sub.size)
+        n_total = np.sum(sizes)
+        ig = current_entropy
+        for n, ent in zip(sizes, entropies):
+            ig -= (n / n_total) * ent
         return ig
 
-    def _split_data(self, split_attr, split_val, x, y):
+    def _split_data(self, split_attr, split_vals, x, y):
         """Splits the data for a given attribute and value
 
         Args:
@@ -208,12 +207,17 @@ class DecisionTreeClassifier(object):
                     datasets where left is < value and right is >= value.
                     (x_left, x_right, y_left, y_right)
         """
-        left_indices = x[:, split_attr] < split_val
-        x_left = x[left_indices]
-        x_right = x[~left_indices]
-        y_left = y[left_indices]
-        y_right = y[~left_indices]
-        return x_left, x_right, y_left, y_right
+        output_x = []
+        output_y = []
+        for split_val in split_vals:
+            indices = x[:, split_attr] < split_val
+            output_x.append(x[indices])
+            x = x[~indices]
+            output_y.append(y[indices])
+            y = y[~indices]
+        output_x.append(x)
+        output_y.append(y)
+        return output_x, output_y
 
     def _find_best_split(self, x, y):
         """Function to find the best data split by information gain
@@ -233,23 +237,22 @@ class DecisionTreeClassifier(object):
             return None, None
         current_entropy = self._evaluate_entropy(y)
         max_IG_attribute = None
-        max_IG_split_val = None
+        max_IG_split_vals = None
         max_IG = -1
+
         for split_attr in range(np.shape(x)[1]):
-            possible_vals = np.unique(sorted(x[:, split_attr]))
-            print(possible_vals)
-            for split_val in possible_vals:
-                x_left, x_right, y_left, y_right = self._split_data(
-                    split_attr, split_val, x, y
-                )
-                information_gain = self._evaluate_information_gain(
-                    current_entropy, y_left, y_right
-                )
-                if information_gain > max_IG:
-                    max_IG = information_gain
-                    max_IG_attribute = split_attr
-                    max_IG_split_val = split_val
-        return (max_IG_attribute, max_IG_split_val)
+            possible_split_vals = np.unique(sorted(x[:, split_attr]))
+            for n in range(len(possible_split_vals)):
+                for split_vals in combinations(possible_split_vals, n + 1):
+                    split_x, split_y = self._split_data(split_attr, split_vals, x, y)
+                    information_gain = self._evaluate_information_gain(
+                        current_entropy, split_y
+                    )
+                    if information_gain > max_IG:
+                        max_IG = information_gain
+                        max_IG_attribute = split_attr
+                        max_IG_split_vals = split_vals
+        return (max_IG_attribute, max_IG_split_vals)
 
     def _build_tree(self, x, y, depth=0):
         """Build the decision tree reccursively
@@ -275,69 +278,68 @@ class DecisionTreeClassifier(object):
         )
         self.node_count += 1
         if depth < self.max_depth and len(np.unique(y)) > 1:
-            split_attr, split_val = self._find_best_split(x, y)
+            split_attr, split_vals = self._find_best_split(x, y)
             if split_attr != None:
-                x_left, x_right, y_left, y_right = self._split_data(
-                    split_attr, split_val, x, y
-                )
-                node.split_value = split_val
+                split_x, split_y = self._split_data(split_attr, split_vals, x, y)
+                node.split_values = split_vals
                 node.split_attribute = split_attr
-                node.left_branch = self._build_tree(x_left, y_left, depth + 1)
-                node.right_branch = self._build_tree(x_right, y_right, depth + 1)
+                node.nodes = []
+                for x, y in zip(split_x, split_y):
+                    node.nodes.append(self._build_tree(x, y, depth + 1))
         else:
             node.leaf = True
         return node
 
 
-class RandomForest(object):
-    def fit(self, x, y, number_of_trees):
-        self.x = x
-        self.y = y
-        self.number_of_trees = number_of_trees
+# class RandomForest(object):
+#     def fit(self, x, y, number_of_trees):
+#         self.x = x
+#         self.y = y
+#         self.number_of_trees = number_of_trees
 
-        num_of_attributes = len(range(np.shape(x)[1]))
+#         num_of_attributes = len(range(np.shape(x)[1]))
 
-        # number of attributes is 10% of total possible
-        num_of_attributes_in_each_tree = math.ceil(num_of_attributes / 8)
+#         # number of attributes is 10% of total possible
+#         num_of_attributes_in_each_tree = math.ceil(num_of_attributes / 8)
 
-        # create list of trees (forest)
-        self.list_of_trees = []
+#         # create list of trees (forest)
+#         self.list_of_trees = []
 
-        for i in range(number_of_trees):
+#         for i in range(number_of_trees):
 
-            seed()
-            attributes_subset = sample(
-                (range(np.shape(x)[1])), num_of_attributes_in_each_tree
-            )
-            attributes_subset = np.asarray(attributes_subset)
+#             seed()
+#             attributes_subset = sample(
+#                 (range(np.shape(x)[1])), num_of_attributes_in_each_tree
+#             )
+#             attributes_subset = np.asarray(attributes_subset)
 
-            sample_indices = choices(range(len(x)), k=len(x))
+#             sample_indices = choices(range(len(x)), k=len(x))
 
-            # cut down to just chosen columns
-            x_sample = x[:, attributes_subset]
+#             # cut down to just chosen columns
+#             x_sample = x[:, attributes_subset]
 
-            # change to sample indices
-            x_sample = x[sample_indices]
-            y_sample = y[sample_indices]
+#             # change to sample indices
+#             x_sample = x[sample_indices]
+#             y_sample = y[sample_indices]
 
-            self.list_of_trees.append(DecisionTreeClassifier())
-            self.list_of_trees[i].fit(x_sample, y_sample)
+#             self.list_of_trees.append(DecisionTreeClassifier())
+#             self.list_of_trees[i].fit(x_sample, y_sample)
 
-    def predict(self, x):
+#     def predict(self, x):
 
-        list_of_trees_predictions = np.empty([self.number_of_trees, len(x)], dtype=str)
+#         list_of_trees_predictions = np.empty([self.number_of_trees, len(x)], dtype=str)
 
-        for i in range(self.number_of_trees):
-            preds = self.list_of_trees[i].predict(x)
-            for j, pred in enumerate(preds):
-                list_of_trees_predictions[i][j] = pred
+#         for i in range(self.number_of_trees):
+#             preds = self.list_of_trees[i].predict(x)
+#             for j, pred in enumerate(preds):
+#                 list_of_trees_predictions[i][j] = pred
 
-        output = np.empty((len(list_of_trees_predictions[0, :])), dtype=str)
+#         output = np.empty((len(list_of_trees_predictions[0, :])), dtype=str)
 
-        for i in range(len(x)):
-            output[i] = mode(list_of_trees_predictions[:, i])
+#         for i in range(len(x)):
+#             output[i] = mode(list_of_trees_predictions[:, i])
 
-        return output
+#         return output
 
 
 x_full, y_full = read_data("data/train_full.txt")
@@ -346,13 +348,17 @@ x_val, y_val = read_data("data/validation.txt")
 classifier = DecisionTreeClassifier()
 classifier.fit(x_full, y_full)
 
-forest = RandomForest()
-forest.fit(x_full, y_full, 128)
-forest_predictions = forest.predict(x_test)
+predictions = classifier.predict(x_test)
+print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
+print("\nAccuracy:\n", accuracy(y_test, predictions))
 
-print("\n ------- RANDOM FOREST ------- \n")
-print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
-print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
+# forest = RandomForest()
+# forest.fit(x_full, y_full, 128)
+# forest_predictions = forest.predict(x_test)
+
+# print("\n ------- RANDOM FOREST ------- \n")
+# print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
+# print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
 # print("\nPrecision:\n", precision(y_test, forest_predictions))
 # print("\nRecall:\n", recall(y_test, forest_predictions))
 # print("\nF1_Score:\n", f1_score(y_test, forest_predictions))
@@ -367,11 +373,11 @@ print("\nAccuracy:\n", accuracy(y_test, predictions))
 # print("\nF1_Score:\n", f1_score(y_test, predictions))
 # print("\nNode Count:\n", classifier.node_count)
 
-print("\n ------- PRUNED BINARY TREE ------- \n")
-classifier.prune(x_val, y_val)
-predictions = classifier.predict(x_test)
-print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-print("\nAccuracy:\n", accuracy(y_test, predictions))
+# print("\n ------- PRUNED BINARY TREE ------- \n")
+# classifier.prune(x_val, y_val)
+# predictions = classifier.predict(x_test)
+# print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
+# print("\nAccuracy:\n", accuracy(y_test, predictions))
 # print("\nPrecision:\n", precision(y_test, predictions))
 # print("\nRecall:\n", recall(y_test, predictions))
 # print("\nF1_Score:\n", f1_score(y_test, predictions))
