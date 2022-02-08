@@ -279,6 +279,10 @@ class DecisionTreeClassifier(object):
                 x_left, x_right, y_left, y_right = self._split_data(
                     split_attr, split_val, x, y
                 )
+                for check_x in [x_left, x_right]:
+                    if len(check_x) == 0:
+                        node.leaf = True
+                        return node
                 node.split_value = split_val
                 node.split_attribute = split_attr
                 node.left_branch = self._build_tree(x_left, y_left, depth + 1)
@@ -316,7 +320,7 @@ class RandomForest(object):
             x_sample = x[:, attributes_subset]
 
             # change to sample indices
-            x_sample = x[sample_indices]
+            x_sample = x_sample[sample_indices]
             y_sample = y[sample_indices]
 
             self.list_of_trees.append(DecisionTreeClassifier())
@@ -334,6 +338,7 @@ class RandomForest(object):
         output = np.empty((len(list_of_trees_predictions[0, :])), dtype=str)
 
         for i in range(len(x)):
+            print(np.unique(list_of_trees_predictions[:, i], return_counts=True))
             output[i] = mode(list_of_trees_predictions[:, i])
 
         return output

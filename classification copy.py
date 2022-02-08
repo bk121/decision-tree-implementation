@@ -306,51 +306,47 @@ class RandomForest(object):
         self.y = y
         self.number_of_trees = number_of_trees
         self.max_branches = max_branches
-
-        num_of_attributes = len(range(np.shape(x)[1]))
-
+        num_of_attributes = np.shape(x)[1]
         # number of attributes is 10% of total possible
-        num_of_attributes_in_each_tree = math.ceil(num_of_attributes / 8)
-
+        num_of_attributes_in_each_tree = math.ceil(num_of_attributes / 10)
         # create list of trees (forest)
-        self.list_of_trees = []
-
+        self.list_of_trees = np.full(
+            number_of_trees, DecisionTreeClassifier(max_branches=self.max_branches)
+        )
+        self.attributes = []
         for i in range(number_of_trees):
+            # attributes_subset = sample(
+            #     (range(num_of_attributes)),
+            #     num_of_attributes - num_of_attributes_in_each_tree,
+            # )
+            # temp = np.zeros_like(x)
+            # temp[:, attributes_subset] = 1
+            # masked = np.ma.masked_array(x, temp)
+            # masked = np.ma.filled(masked, 0)
+            # self.list_of_trees[i].fit(masked, y)
+            # self.list_of_trees[i].prune(x_val, y_val)
 
             seed()
             attributes_subset = sample(
                 (range(np.shape(x)[1])), num_of_attributes_in_each_tree
             )
             attributes_subset = np.asarray(attributes_subset)
-            print(attributes_subset)
-
-            sample_indices = choices(range(len(x)), k=len(x))
-
+            self.attributes.append(attributes_subset)
             # cut down to just chosen columns
             x_sample = x[:, attributes_subset]
-            x_val_cut = x_val[:, attributes_subset]
 
-            # change to sample indices
-            # x_sample = x[sample_indices]
-            # y_sample = y[sample_indices]
-
-            self.list_of_trees.append(
-                DecisionTreeClassifier(max_branches=self.max_branches)
-            )
             self.list_of_trees[i].fit(x_sample, y)
-            # self.list_of_trees[i].prune(x_val_cut, y_val)
 
     def predict(self, x):
 
         list_of_trees_predictions = np.empty([self.number_of_trees, len(x)], dtype=str)
 
         for i in range(self.number_of_trees):
-            preds = self.list_of_trees[i].predict(x)
+            preds = self.list_of_trees[i].predict(x[:, self.attributes[i]])
             for j, pred in enumerate(preds):
                 list_of_trees_predictions[i][j] = pred
-        print(list_of_trees_predictions)
 
-        output = np.empty((len(list_of_trees_predictions[0, :])), dtype=str)
+        output = np.empty(len(x), dtype=str)
 
         for i in range(len(x)):
             output[i] = mode(list_of_trees_predictions[:, i])
@@ -372,68 +368,68 @@ print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
 # print("\nRecall:\n", recall(y_test, forest_predictions))
 # print("\nF1_Score:\n", f1_score(y_test, forest_predictions))
 
-save_classifiers = open(
-    "trained_classifiers/rf_pruned_two_way.pickle",
-    "wb",
-)
-pickle.dump(forest, save_classifiers)
-save_classifiers.close()
+# save_classifiers = open(
+#     "trained_classifiers/rf_pruned_two_way.pickle",
+#     "wb",
+# )
+# pickle.dump(forest, save_classifiers)
+# save_classifiers.close()
 
-print("\n ----- RANDOM FOREST MB=3 ----- \n")
-forest = RandomForest()
-forest.fit(x_full, y_full, x_val, y_val, 128, max_branches=3)
-forest_predictions = forest.predict(x_test)
-print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
-print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
+# print("\n ----- RANDOM FOREST MB=3 ----- \n")
+# forest = RandomForest()
+# forest.fit(x_full, y_full, x_val, y_val, 128, max_branches=3)
+# forest_predictions = forest.predict(x_test)
+# print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
+# print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
 
-save_classifiers = open(
-    "trained_classifiers/rf_pruned_three_way.pickle",
-    "wb",
-)
-pickle.dump(forest, save_classifiers)
-save_classifiers.close()
+# save_classifiers = open(
+#     "trained_classifiers/rf_pruned_three_way.pickle",
+#     "wb",
+# )
+# pickle.dump(forest, save_classifiers)
+# save_classifiers.close()
 
-print("\n ----- RANDOM FOREST MB=4 ----- \n")
-forest = RandomForest()
-forest.fit(x_full, y_full, x_val, y_val, 128, max_branches=4)
-forest_predictions = forest.predict(x_test)
-print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
-print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
+# print("\n ----- RANDOM FOREST MB=4 ----- \n")
+# forest = RandomForest()
+# forest.fit(x_full, y_full, x_val, y_val, 128, max_branches=4)
+# forest_predictions = forest.predict(x_test)
+# print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
+# print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
 
-save_classifiers = open(
-    "trained_classifiers/rf_pruned_four_way.pickle",
-    "wb",
-)
-pickle.dump(forest, save_classifiers)
-save_classifiers.close()
+# save_classifiers = open(
+#     "trained_classifiers/rf_pruned_four_way.pickle",
+#     "wb",
+# )
+# pickle.dump(forest, save_classifiers)
+# save_classifiers.close()
 
-print("\n ----- RANDOM FOREST MB=5 ----- \n")
-forest = RandomForest()
-forest.fit(x_full, y_full, x_val, y_val, 128, max_branches=5)
-forest_predictions = forest.predict(x_test)
-print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
-print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
+# print("\n ----- RANDOM FOREST MB=5 ----- \n")
+# forest = RandomForest()
+# forest.fit(x_full, y_full, x_val, y_val, 128, max_branches=5)
+# forest_predictions = forest.predict(x_test)
+# print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
+# print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
 
-save_classifiers = open(
-    "trained_classifiers/rf_pruned_five_way.pickle",
-    "wb",
-)
-pickle.dump(forest, save_classifiers)
-save_classifiers.close()
+# save_classifiers = open(
+#     "trained_classifiers/rf_pruned_five_way.pickle",
+#     "wb",
+# )
+# pickle.dump(forest, save_classifiers)
+# save_classifiers.close()
 
-print("\n ----- RANDOM FOREST MB=inf ----- \n")
-forest = RandomForest()
-forest.fit(x_full, y_full, x_val, y_val, 128)
-forest_predictions = forest.predict(x_test)
-print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
-print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
+# print("\n ----- RANDOM FOREST MB=inf ----- \n")
+# forest = RandomForest()
+# forest.fit(x_full, y_full, x_val, y_val, 128)
+# forest_predictions = forest.predict(x_test)
+# print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
+# print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
 
-save_classifiers = open(
-    "trained_classifiers/rf_pruned_multiway.pickle",
-    "wb",
-)
-pickle.dump(forest, save_classifiers)
-save_classifiers.close()
+# save_classifiers = open(
+#     "trained_classifiers/rf_pruned_multiway.pickle",
+#     "wb",
+# )
+# pickle.dump(forest, save_classifiers)
+# save_classifiers.close()
 
 print("\n ------- SIMPLE BINARY TREE ------- \n")
 classifier = DecisionTreeClassifier(max_branches=2)
