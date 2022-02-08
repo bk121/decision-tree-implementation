@@ -20,6 +20,7 @@ from random import sample, randint, seed, choices
 import math
 from statistics import mode
 from evaluation_metrics import accuracy, confusion_matrix, precision, recall, f1_score
+import pickle
 
 
 class DecisionTreeClassifier(object):
@@ -112,12 +113,13 @@ class DecisionTreeClassifier(object):
 
         def _predict(row):
             node = self.root
-            while node.nodes:
-                node = node.nodes[-1]
-                for i, split_val in enumerate(node.split_values):
-                    if row[node.split_attribute] < split_val:
-                        node = node.nodes[i]
-
+            while not node.leaf:
+                split_vals = node.split_values
+                outer = 0
+                for split_val in split_vals:
+                    if row[node.split_attribute] >= split_val:
+                        outer += 1
+                node = node.nodes[outer]
             return node.predicted_class
 
         return np.array([_predict(row) for row in x])
@@ -127,24 +129,20 @@ class DecisionTreeClassifier(object):
         self._reccursively_prune(x, y, node)
 
     def _reccursively_prune(self, x, y, node):
-        if node.left_branch.leaf and node.right_branch.leaf:
+        if all(n.leaf for n in node.nodes):
             prior_acc = self._accuracy(x, y)
-            left_branch = node.left_branch
-            right_branch = node.right_branch
-            node.left_branch = None
-            node.right_branch = None
+            nodes = node.nodes
+            node.nodes = None
             node.leaf = True
             after_acc = self._accuracy(x, y)
-            self.node_count -= 2
+            self.node_count -= len(nodes)
             if after_acc <= prior_acc:
-                node.left_branch = left_branch
-                node.right_branch = right_branch
-                self.node_count += 2
+                node.nodes = nodes
+                self.node_count += len(nodes)
             return
-        if not node.left_branch.leaf:
-            self._reccursively_prune(x, y, node.left_branch)
-        if not node.right_branch.leaf:
-            self._reccursively_prune(x, y, node.right_branch)
+        for n in node.nodes:
+            if not n.leaf:
+                self._reccursively_prune(x, y, n)
 
     def _accuracy(self, x, y):
         preds = self.predict(x)
@@ -348,9 +346,34 @@ x_val, y_val = read_data("data/validation.txt")
 classifier = DecisionTreeClassifier()
 classifier.fit(x_full, y_full)
 
+save_classifiers = open(
+    "trained_classifiers/multiway_tree.pickle",
+    "wb",
+)
+pickle.dump(classifier, save_classifiers)
+save_classifiers.close()
+
 predictions = classifier.predict(x_test)
 print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
 print("\nAccuracy:\n", accuracy(y_test, predictions))
+
+predictions = classifier.predict(x_val)
+print("Confusion Matrix:\n", confusion_matrix(y_val, predictions))
+print("\nAccuracy:\n", accuracy(y_val, predictions))
+
+print("\nNode Count:\n", classifier.node_count)
+
+classifier.prune(x_val, y_val)
+
+predictions = classifier.predict(x_test)
+print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
+print("\nAccuracy:\n", accuracy(y_test, predictions))
+
+predictions = classifier.predict(x_val)
+print("Confusion Matrix:\n", confusion_matrix(y_val, predictions))
+print("\nAccuracy:\n", accuracy(y_val, predictions))
+
+print("\nNode Count:\n", classifier.node_count)
 
 # forest = RandomForest()
 # forest.fit(x_full, y_full, 128)
@@ -364,10 +387,10 @@ print("\nAccuracy:\n", accuracy(y_test, predictions))
 # print("\nF1_Score:\n", f1_score(y_test, forest_predictions))
 # print("\nNode Count:\n", classifier.node_count)
 
-print("\n ------- SIMPLE BINARY TREE ------- \n")
-predictions = classifier.predict(x_test)
-print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-print("\nAccuracy:\n", accuracy(y_test, predictions))
+# print("\n ------- SIMPLE BINARY TREE ------- \n")
+# predictions = classifier.predict(x_test)
+# print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
+# print("\nAccuracy:\n", accuracy(y_test, predictions))
 # print("\nPrecision:\n", precision(y_test, predictions))
 # print("\nRecall:\n", recall(y_test, predictions))
 # print("\nF1_Score:\n", f1_score(y_test, predictions))
