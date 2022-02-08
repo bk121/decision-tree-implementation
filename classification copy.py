@@ -13,6 +13,7 @@ Summary of File:
         Contains node class for binary decision tree classifier.
 """
 
+from pyexpat.errors import XML_ERROR_INVALID_TOKEN
 import numpy as np
 from itertools import combinations
 from read_data import read_data
@@ -37,7 +38,7 @@ class DecisionTreeClassifier(object):
     # prune(x_val, y_val): Post-prunes the decision tree < -- NOT YET
     """
 
-    def __init__(self, max_depth=np.Inf):
+    def __init__(self, max_depth=np.Inf, max_branches=None):
         """Constructor of decision tree class
 
         Args:
@@ -45,6 +46,7 @@ class DecisionTreeClassifier(object):
                                         Defaults to np.Inf.
         """
         self.is_trained = False
+        self.max_branches = max_branches
         self.max_depth = max_depth
         self.root = None
         self.node_count = 0
@@ -139,6 +141,7 @@ class DecisionTreeClassifier(object):
             if after_acc <= prior_acc:
                 node.nodes = nodes
                 self.node_count += len(nodes)
+                node.leaf = False
             return
         for n in node.nodes:
             if not n.leaf:
@@ -240,7 +243,10 @@ class DecisionTreeClassifier(object):
 
         for split_attr in range(np.shape(x)[1]):
             possible_split_vals = np.unique(sorted(x[:, split_attr]))
-            for n in range(len(possible_split_vals)):
+            max_branches = (
+                self.max_branches if self.max_branches else len(possible_split_vals)
+            )
+            for n in range(max_branches):
                 for split_vals in combinations(possible_split_vals, n + 1):
                     split_x, split_y = self._split_data(split_attr, split_vals, x, y)
                     information_gain = self._evaluate_information_gain(
@@ -266,6 +272,7 @@ class DecisionTreeClassifier(object):
         Returns:
             Node: Root node of the tree
         """
+
         classes, counts = np.unique(y, return_counts=True)
         predicted_class = y[np.argmax(counts)]
         class_dist = np.asarray((classes, counts)).T
@@ -275,10 +282,14 @@ class DecisionTreeClassifier(object):
             predicted_class=predicted_class,
         )
         self.node_count += 1
-        if depth < self.max_depth and len(np.unique(y)) > 1:
+        if depth < self.max_depth and len(np.unique(y)) > 1 and not (x == x[0]).all():
             split_attr, split_vals = self._find_best_split(x, y)
             if split_attr != None:
                 split_x, split_y = self._split_data(split_attr, split_vals, x, y)
+                for check_x in split_x:
+                    if len(check_x) == 0:
+                        node.leaf = True
+                        return node
                 node.split_values = split_vals
                 node.split_attribute = split_attr
                 node.nodes = []
@@ -289,118 +300,157 @@ class DecisionTreeClassifier(object):
         return node
 
 
-# class RandomForest(object):
-#     def fit(self, x, y, number_of_trees):
-#         self.x = x
-#         self.y = y
-#         self.number_of_trees = number_of_trees
+class RandomForest(object):
+    def fit(self, x, y, x_val, y_val, number_of_trees, max_branches=None):
+        self.x = x
+        self.y = y
+        self.number_of_trees = number_of_trees
+        self.max_branches = max_branches
 
-#         num_of_attributes = len(range(np.shape(x)[1]))
+        num_of_attributes = len(range(np.shape(x)[1]))
 
-#         # number of attributes is 10% of total possible
-#         num_of_attributes_in_each_tree = math.ceil(num_of_attributes / 8)
+        # number of attributes is 10% of total possible
+        num_of_attributes_in_each_tree = math.ceil(num_of_attributes / 8)
 
-#         # create list of trees (forest)
-#         self.list_of_trees = []
+        # create list of trees (forest)
+        self.list_of_trees = []
 
-#         for i in range(number_of_trees):
+        for i in range(number_of_trees):
 
-#             seed()
-#             attributes_subset = sample(
-#                 (range(np.shape(x)[1])), num_of_attributes_in_each_tree
-#             )
-#             attributes_subset = np.asarray(attributes_subset)
+            seed()
+            attributes_subset = sample(
+                (range(np.shape(x)[1])), num_of_attributes_in_each_tree
+            )
+            attributes_subset = np.asarray(attributes_subset)
+            print(attributes_subset)
 
-#             sample_indices = choices(range(len(x)), k=len(x))
+            sample_indices = choices(range(len(x)), k=len(x))
 
-#             # cut down to just chosen columns
-#             x_sample = x[:, attributes_subset]
+            # cut down to just chosen columns
+            x_sample = x[:, attributes_subset]
+            x_val_cut = x_val[:, attributes_subset]
 
-#             # change to sample indices
-#             x_sample = x[sample_indices]
-#             y_sample = y[sample_indices]
+            # change to sample indices
+            # x_sample = x[sample_indices]
+            # y_sample = y[sample_indices]
 
-#             self.list_of_trees.append(DecisionTreeClassifier())
-#             self.list_of_trees[i].fit(x_sample, y_sample)
+            self.list_of_trees.append(
+                DecisionTreeClassifier(max_branches=self.max_branches)
+            )
+            self.list_of_trees[i].fit(x_sample, y)
+            # self.list_of_trees[i].prune(x_val_cut, y_val)
 
-#     def predict(self, x):
+    def predict(self, x):
 
-#         list_of_trees_predictions = np.empty([self.number_of_trees, len(x)], dtype=str)
+        list_of_trees_predictions = np.empty([self.number_of_trees, len(x)], dtype=str)
 
-#         for i in range(self.number_of_trees):
-#             preds = self.list_of_trees[i].predict(x)
-#             for j, pred in enumerate(preds):
-#                 list_of_trees_predictions[i][j] = pred
+        for i in range(self.number_of_trees):
+            preds = self.list_of_trees[i].predict(x)
+            for j, pred in enumerate(preds):
+                list_of_trees_predictions[i][j] = pred
+        print(list_of_trees_predictions)
 
-#         output = np.empty((len(list_of_trees_predictions[0, :])), dtype=str)
+        output = np.empty((len(list_of_trees_predictions[0, :])), dtype=str)
 
-#         for i in range(len(x)):
-#             output[i] = mode(list_of_trees_predictions[:, i])
+        for i in range(len(x)):
+            output[i] = mode(list_of_trees_predictions[:, i])
 
-#         return output
+        return output
 
 
 x_full, y_full = read_data("data/train_full.txt")
 x_test, y_test = read_data("data/test.txt")
 x_val, y_val = read_data("data/validation.txt")
-classifier = DecisionTreeClassifier()
-classifier.fit(x_full, y_full)
 
-save_classifiers = open(
-    "trained_classifiers/multiway_tree.pickle",
-    "wb",
-)
-pickle.dump(classifier, save_classifiers)
-save_classifiers.close()
-
-predictions = classifier.predict(x_test)
-print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-print("\nAccuracy:\n", accuracy(y_test, predictions))
-
-predictions = classifier.predict(x_val)
-print("Confusion Matrix:\n", confusion_matrix(y_val, predictions))
-print("\nAccuracy:\n", accuracy(y_val, predictions))
-
-print("\nNode Count:\n", classifier.node_count)
-
-classifier.prune(x_val, y_val)
-
-predictions = classifier.predict(x_test)
-print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-print("\nAccuracy:\n", accuracy(y_test, predictions))
-
-predictions = classifier.predict(x_val)
-print("Confusion Matrix:\n", confusion_matrix(y_val, predictions))
-print("\nAccuracy:\n", accuracy(y_val, predictions))
-
-print("\nNode Count:\n", classifier.node_count)
-
-# forest = RandomForest()
-# forest.fit(x_full, y_full, 128)
-# forest_predictions = forest.predict(x_test)
-
-# print("\n ------- RANDOM FOREST ------- \n")
-# print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
-# print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
+print("\n ----- RANDOM FOREST MB=2 ----- \n")
+forest = RandomForest()
+forest.fit(x_full, y_full, x_val, y_val, 128, max_branches=2)
+forest_predictions = forest.predict(x_test)
+print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
+print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
 # print("\nPrecision:\n", precision(y_test, forest_predictions))
 # print("\nRecall:\n", recall(y_test, forest_predictions))
 # print("\nF1_Score:\n", f1_score(y_test, forest_predictions))
-# print("\nNode Count:\n", classifier.node_count)
 
-# print("\n ------- SIMPLE BINARY TREE ------- \n")
-# predictions = classifier.predict(x_test)
-# print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-# print("\nAccuracy:\n", accuracy(y_test, predictions))
+save_classifiers = open(
+    "trained_classifiers/rf_pruned_two_way.pickle",
+    "wb",
+)
+pickle.dump(forest, save_classifiers)
+save_classifiers.close()
+
+print("\n ----- RANDOM FOREST MB=3 ----- \n")
+forest = RandomForest()
+forest.fit(x_full, y_full, x_val, y_val, 128, max_branches=3)
+forest_predictions = forest.predict(x_test)
+print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
+print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
+
+save_classifiers = open(
+    "trained_classifiers/rf_pruned_three_way.pickle",
+    "wb",
+)
+pickle.dump(forest, save_classifiers)
+save_classifiers.close()
+
+print("\n ----- RANDOM FOREST MB=4 ----- \n")
+forest = RandomForest()
+forest.fit(x_full, y_full, x_val, y_val, 128, max_branches=4)
+forest_predictions = forest.predict(x_test)
+print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
+print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
+
+save_classifiers = open(
+    "trained_classifiers/rf_pruned_four_way.pickle",
+    "wb",
+)
+pickle.dump(forest, save_classifiers)
+save_classifiers.close()
+
+print("\n ----- RANDOM FOREST MB=5 ----- \n")
+forest = RandomForest()
+forest.fit(x_full, y_full, x_val, y_val, 128, max_branches=5)
+forest_predictions = forest.predict(x_test)
+print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
+print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
+
+save_classifiers = open(
+    "trained_classifiers/rf_pruned_five_way.pickle",
+    "wb",
+)
+pickle.dump(forest, save_classifiers)
+save_classifiers.close()
+
+print("\n ----- RANDOM FOREST MB=inf ----- \n")
+forest = RandomForest()
+forest.fit(x_full, y_full, x_val, y_val, 128)
+forest_predictions = forest.predict(x_test)
+print("Confusion Matrix:\n", confusion_matrix(y_test, forest_predictions))
+print("\nAccuracy:\n", accuracy(y_test, forest_predictions))
+
+save_classifiers = open(
+    "trained_classifiers/rf_pruned_multiway.pickle",
+    "wb",
+)
+pickle.dump(forest, save_classifiers)
+save_classifiers.close()
+
+print("\n ------- SIMPLE BINARY TREE ------- \n")
+classifier = DecisionTreeClassifier(max_branches=2)
+classifier.fit(x_full, y_full)
+predictions = classifier.predict(x_test)
+print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
+print("\nAccuracy:\n", accuracy(y_test, predictions))
 # print("\nPrecision:\n", precision(y_test, predictions))
 # print("\nRecall:\n", recall(y_test, predictions))
 # print("\nF1_Score:\n", f1_score(y_test, predictions))
 # print("\nNode Count:\n", classifier.node_count)
 
-# print("\n ------- PRUNED BINARY TREE ------- \n")
-# classifier.prune(x_val, y_val)
-# predictions = classifier.predict(x_test)
-# print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-# print("\nAccuracy:\n", accuracy(y_test, predictions))
+print("\n ------- PRUNED BINARY TREE ------- \n")
+classifier.prune(x_val, y_val)
+predictions = classifier.predict(x_test)
+print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
+print("\nAccuracy:\n", accuracy(y_test, predictions))
 # print("\nPrecision:\n", precision(y_test, predictions))
 # print("\nRecall:\n", recall(y_test, predictions))
 # print("\nF1_Score:\n", f1_score(y_test, predictions))

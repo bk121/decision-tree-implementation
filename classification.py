@@ -237,7 +237,6 @@ class DecisionTreeClassifier(object):
         max_IG = -1
         for split_attr in range(np.shape(x)[1]):
             possible_vals = np.unique(sorted(x[:, split_attr]))
-            print(possible_vals)
             for split_val in possible_vals:
                 x_left, x_right, y_left, y_right = self._split_data(
                     split_attr, split_val, x, y
