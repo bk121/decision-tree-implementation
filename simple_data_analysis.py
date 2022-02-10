@@ -1,5 +1,15 @@
-from attr import attributes
-from nbformat import read
+"""
+File:           simple_data_analysis.py
+Author:         Jonas Birk, Ted Jenks, Tom Mitcheson, Ben Kirwan
+Creation Date:  30/01/2022
+Last Edit Date: 31/02/2022
+Last Edit By:   Ted Jenks
+
+Summary of File:
+
+        Contains simple analytics of the training data.
+"""
+
 from read_data import read_data
 import numpy as np
 import matplotlib.pyplot as plt
@@ -73,8 +83,11 @@ for j, (file, x, y) in enumerate(zip(files, x_array, y_array)):
             "      Range of values in attribute",
             i,
             ":",
-            np.max(column) - np.min(column), "\t with max: ", np.max(column),
-            " and min: ", np.min(column)
+            np.max(column) - np.min(column),
+            "\t with max: ",
+            np.max(column),
+            " and min: ",
+            np.min(column),
         )
         ranges[i] = np.max(column) - np.min(column)
     range_plot[j] = ranges
@@ -102,42 +115,3 @@ for row, val in zip(x_full, y_full):
 proportion = crossover / np.size(y_array[0])
 
 print("     ", proportion)
-
-
-
-# y_nums = []
-# for y in y_full:
-#     y_nums.append(ord(y))
-# fig, ax = plt.subplots(5, 2)
-# k = 0
-# l = 0
-# for i in range(5):
-#     for j in range(5):
-#         if j > i:
-#             ax[k][l].scatter(
-#                 x_full[:, i], x_full[:, j], c=y_nums, cmap=plt.cm.Set1, edgecolor="k"
-#             )
-#             k += 1
-#             if k >= 5:
-#                 k = 0
-#                 l += 1
-
-# plt.show()
-
-
-"""
-
-1.1 - sub has lower ranges of values for attributes in general (except 1 and 2)
-    - sub has far more bias in the data: there's loads of class C, barely any G and very few Q
-    - with this bias combined with the smaller size, it probably isn't suitable for training
-    
-1.2 - the attributes in the files are represented with ints
-    - it is not clear exactly what they represent
-        - they could be stand-ins for some discret classification
-        - they could be part of a continuous number line
-    - the fact the range of attributes isn't consistent in full and sub may indicate they arn't catagorical
-    
-1.3 - the class distribution has been effected - less Gs, more Os in noisy
-    - the data agrees to around 84% what the classes for the attributes should be
-    
-"""

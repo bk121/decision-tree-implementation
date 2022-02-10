@@ -1,12 +1,12 @@
 """
-File:           classification.py
+File:           binary_classification.py
 Author:         Jonas Birk, Ted Jenks, Tom Mitcheson, Ben Kirwan
 Creation Date:  31/01/2022
-Last Edit Date: 02/02/2022
+Last Edit Date: 10/02/2022
 Last Edit By:   Ted Jenks
 
-Classes:            DecisionTreeClassifier
-Public Functions:   fit(x,y), predict(x)
+Classes:            MultiwayDecisionTreeClassifier
+Public Functions:   fit(x,y), predict(x), prun(x_val,y_val)
 
 Summary of File:
 
@@ -14,12 +14,6 @@ Summary of File:
 """
 
 import numpy as np
-from read_data import read_data
-from random import sample, randint, seed, choices
-import math
-from statistics import mode
-from evaluation_metrics import accuracy, confusion_matrix, precision, recall, f1_score
-import pickle
 
 
 class BinaryDecisionTreeClassifier(object):
@@ -33,7 +27,7 @@ class BinaryDecisionTreeClassifier(object):
     Methods:
     fit(x, y): Constructs a decision tree from data X and label y
     predict(x): Predicts the class label of samples X
-    # prune(x_val, y_val): Post-prunes the decision tree < -- NOT YET
+    prune(x_val, y_val): Post-prunes the decision tree
     """
 
     def __init__(self, max_depth=np.Inf):
@@ -124,10 +118,29 @@ class BinaryDecisionTreeClassifier(object):
         return np.array([_predict(row) for row in x])
 
     def prune(self, x, y):
+        """Prune the tree with a validation data set
+
+        Args:
+            x (np.ndarray): Instances, numpy array of shape (M, K)
+                           M is the number of validation instances
+                           K is the number of x
+            y (np.ndarray): Class y, numpy array of shape (N, )
+                           Each element in y is a str
+        """
         node = self.root
         self._reccursively_prune(x, y, node)
 
     def _reccursively_prune(self, x, y, node):
+        """Recurrsive function to prune the tree
+
+        Args:
+            x (np.ndarray): Instances, numpy array of shape (M, K)
+                        M is the number of validation instances
+                        K is the number of x
+            y (np.ndarray): Class y, numpy array of shape (N, )
+                        Each element in y is a str
+            node (Node): Node to move from in pruning
+        """
         if node.left_branch.leaf and node.right_branch.leaf:
             prior_acc = self._accuracy(x, y)
             left_branch = node.left_branch

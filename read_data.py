@@ -1,3 +1,17 @@
+"""
+File:           read_data.py
+Author:         Jonas Birk, Ted Jenks, Tom Mitcheson, Ben Kirwan
+Creation Date:  30/01/2022
+Last Edit Date: 31/02/2022
+Last Edit By:   Ted Jenks
+
+Public Functions:   read_data(filepath)
+
+Summary of File:
+
+        Contains data reader.
+"""
+
 import numpy as np
 
 

@@ -1,3 +1,15 @@
+"""
+File:           __main__.py
+Author:         Jonas Birk, Ted Jenks, Tom Mitcheson, Ben Kirwan
+Creation Date:  31/01/2022
+Last Edit Date: 10/02/2022
+Last Edit By:   Ted Jenks
+
+Summary of File:
+
+        Contains main file to run classifier(s).
+"""
+
 import binary_classification
 import multiway_classification
 from multiway_classification import MultiwayDecisionTreeClassifier

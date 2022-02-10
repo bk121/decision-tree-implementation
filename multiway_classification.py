@@ -1,27 +1,24 @@
 """
-File:           classification.py
+File:           multiway_classification.py
 Author:         Jonas Birk, Ted Jenks, Tom Mitcheson, Ben Kirwan
 Creation Date:  31/01/2022
-Last Edit Date: 02/02/2022
+Last Edit Date: 10/02/2022
 Last Edit By:   Ted Jenks
 
-Classes:            DecisionTreeClassifier
-Public Functions:   fit(x,y), predict(x)
+Classes:            MultiwayDecisionTreeClassifier
+Public Functions:   fit(x,y), predict(x), prune(x_val,y_val)
 
 Summary of File:
 
-        Contains node class for binary decision tree classifier.
+        Contains multiway decision tree classifier.
 """
 
 import numpy as np
-from evaluation_metrics import accuracy, confusion_matrix, precision, recall, f1_score
 from itertools import combinations
-from read_data import read_data
-import pickle
 
 
 class MultiwayDecisionTreeClassifier(object):
-    """Basic decision tree classifier
+    """Multiway decision tree classifier
 
     Attributes:
     is_trained (bool): Keeps track of whether the classifier has been trained
@@ -329,16 +326,14 @@ class MultiwayDecisionTreeClassifier(object):
             possible_split_vals = np.unique(sorted(x[:, split_attr]))
             # Use max split value if set
             max_branches = (
-                self.max_branches if self.max_branches else len(
-                    possible_split_vals)
+                self.max_branches if self.max_branches else len(possible_split_vals)
             )
             # Try all number of branches
             for n in range(max_branches):
                 # Test all the combinations of split values
                 for split_vals in combinations(possible_split_vals, n + 1):
                     # Make split
-                    split_x, split_y = self._split_data(
-                        split_attr, split_vals, x, y)
+                    split_x, split_y = self._split_data(split_attr, split_vals, x, y)
                     # Get the gain of the split
                     information_gain = self._evaluate_information_gain(
                         current_entropy, split_y
@@ -383,8 +378,7 @@ class MultiwayDecisionTreeClassifier(object):
             split_attr, split_vals = self._find_best_split(x, y)
             if split_attr != None:
                 # Get the split up data
-                split_x, split_y = self._split_data(
-                    split_attr, split_vals, x, y)
+                split_x, split_y = self._split_data(split_attr, split_vals, x, y)
                 # Check none of the subsets are 0 length
                 for check_x in split_x:
                     if len(check_x) == 0:
@@ -401,110 +395,3 @@ class MultiwayDecisionTreeClassifier(object):
             # If end condition met set leaf to true
             node.leaf = True
         return node
-
-
-# x_full, y_full = read_data("data/train_full.txt")
-# x_test, y_test = read_data("data/test.txt")
-# x_val, y_val = read_data("data/validation.txt")
-
-# print("\n ------- SIMPLE BINARY TREE ------- \n")
-# classifier = MultiwayDecisionTreeClassifier(max_branches=2)
-# classifier.fit(x_full, y_full)
-# predictions = classifier.predict(x_test)
-# print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-# print("\nAccuracy:\n", accuracy(y_test, predictions))
-# save_classifiers = open(
-#     "trained_classifiers/mw-two-way.pickle",
-#     "wb",
-# )
-# pickle.dump(classifier, save_classifiers)
-# save_classifiers.close()
-
-
-# print("\n ------- PRUNED BINARY TREE ------- \n")
-# classifier.prune(x_val, y_val)
-# predictions = classifier.predict(x_test)
-# print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-# print("\nAccuracy:\n", accuracy(y_test, predictions))
-# save_classifiers = open(
-#     "trained_classifiers/mw-two-way-pruned.pickle",
-#     "wb",
-# )
-# pickle.dump(classifier, save_classifiers)
-# save_classifiers.close()
-
-
-# print("\n ------- SIMPLE 3 TREE ------- \n")
-# classifier = MultiwayDecisionTreeClassifier(max_branches=3)
-# classifier.fit(x_full, y_full)
-# predictions = classifier.predict(x_test)
-# print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-# print("\nAccuracy:\n", accuracy(y_test, predictions))
-# save_classifiers = open(
-#     "trained_classifiers/mw-three-way.pickle",
-#     "wb",
-# )
-# pickle.dump(classifier, save_classifiers)
-# save_classifiers.close()
-
-# print("\n ------- PRUNED 3 TREE ------- \n")
-# classifier.prune(x_val, y_val)
-# predictions = classifier.predict(x_test)
-# print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-# print("\nAccuracy:\n", accuracy(y_test, predictions))
-# save_classifiers = open(
-#     "trained_classifiers/mw-three-way-pruned.pickle",
-#     "wb",
-# )
-# pickle.dump(classifier, save_classifiers)
-# save_classifiers.close()
-
-# print("\n ------- SIMPLE 4 TREE ------- \n")
-# classifier = MultiwayDecisionTreeClassifier(max_branches=4)
-# classifier.fit(x_full, y_full)
-# predictions = classifier.predict(x_test)
-# print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-# print("\nAccuracy:\n", accuracy(y_test, predictions))
-# save_classifiers = open(
-#     "trained_classifiers/mw-four-way.pickle",
-#     "wb",
-# )
-# pickle.dump(classifier, save_classifiers)
-# save_classifiers.close()
-
-# print("\n ------- PRUNED 4 TREE ------- \n")
-# classifier.prune(x_val, y_val)
-# predictions = classifier.predict(x_test)
-# print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-# print("\nAccuracy:\n", accuracy(y_test, predictions))
-# save_classifiers = open(
-#     "trained_classifiers/mw-four-way-pruned.pickle",
-#     "wb",
-# )
-# pickle.dump(classifier, save_classifiers)
-# save_classifiers.close()
-
-# print("\n ------- SIMPLE inf TREE ------- \n")
-# classifier = MultiwayDecisionTreeClassifier()
-# classifier.fit(x_full, y_full)
-# predictions = classifier.predict(x_test)
-# print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-# print("\nAccuracy:\n", accuracy(y_test, predictions))
-# save_classifiers = open(
-#     "trained_classifiers/mw-inf-way.pickle",
-#     "wb",
-# )
-# pickle.dump(classifier, save_classifiers)
-# save_classifiers.close()
-
-# print("\n ------- PRUNED inf TREE ------- \n")
-# classifier.prune(x_val, y_val)
-# predictions = classifier.predict(x_test)
-# print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-# print("\nAccuracy:\n", accuracy(y_test, predictions))
-# save_classifiers = open(
-#     "trained_classifiers/mw-inf-way-pruned.pickle",
-#     "wb",
-# )
-# pickle.dump(classifier, save_classifiers)
-# save_classifiers.close()
