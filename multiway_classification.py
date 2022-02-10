@@ -100,6 +100,7 @@ class MultiwayDecisionTreeClassifier(object):
             y
         ), "Training failed. x and y must have the same number of instances."
         # Build the decision tree
+        self.node_count = 0
         self.root = self._build_tree(x, y)
         # Set a flag so that we know that the classifier has been trained
         self.is_trained = True
