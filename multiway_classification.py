@@ -238,7 +238,7 @@ class MultiwayDecisionTreeClassifier(object):
         # Make each a proportion of total
         p_x = counts / y.size
         # Apply entropy formula
-        entropy = -np.sum(p_x * np.log2(p_x + 1e-20))
+        entropy = -np.sum(p_x * np.log2(p_x))
         return entropy
 
     def _evaluate_information_gain(self, current_entropy, split_y):
@@ -367,7 +367,7 @@ class MultiwayDecisionTreeClassifier(object):
         # Get the labels and counts in data
         classes, counts = np.unique(y, return_counts=True)
         # Find the mode for predicition
-        predicted_class = y[np.argmax(counts)]
+        predicted_class = classes[np.argmax(counts)]
         # Get the classes at node
         class_dist = np.asarray((classes, counts)).T
         # Set up a new node
@@ -403,16 +403,22 @@ class MultiwayDecisionTreeClassifier(object):
         return node
 
 
-x_full, y_full = read_data("data/train_full.txt")
-x_test, y_test = read_data("data/test.txt")
-x_val, y_val = read_data("data/validation.txt")
+# x_full, y_full = read_data("data/train_full.txt")
+# x_test, y_test = read_data("data/test.txt")
+# x_val, y_val = read_data("data/validation.txt")
 
-print("\n ------- SIMPLE BINARY TREE ------- \n")
-classifier = MultiwayDecisionTreeClassifier(max_branches=2)
-classifier.fit(x_full, y_full)
-predictions = classifier.predict(x_test)
-print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
-print("\nAccuracy:\n", accuracy(y_test, predictions))
+# print("\n ------- SIMPLE BINARY TREE ------- \n")
+# classifier = MultiwayDecisionTreeClassifier(max_branches=2)
+# classifier.fit(x_full, y_full)
+# predictions = classifier.predict(x_test)
+# print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))
+# print("\nAccuracy:\n", accuracy(y_test, predictions))
+# save_classifiers = open(
+#     "trained_classifiers/mw-two-way.pickle",
+#     "wb",
+# )
+# pickle.dump(classifier, save_classifiers)
+# save_classifiers.close()
 
 
 # print("\n ------- PRUNED BINARY TREE ------- \n")
@@ -491,7 +497,7 @@ print("\nAccuracy:\n", accuracy(y_test, predictions))
 # pickle.dump(classifier, save_classifiers)
 # save_classifiers.close()
 
-# print("\n ------- PRUNED 3 TREE ------- \n")
+# print("\n ------- PRUNED inf TREE ------- \n")
 # classifier.prune(x_val, y_val)
 # predictions = classifier.predict(x_test)
 # print("Confusion Matrix:\n", confusion_matrix(y_test, predictions))

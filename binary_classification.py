@@ -166,7 +166,7 @@ class BinaryDecisionTreeClassifier(object):
         """
         unique_labels, counts = np.unique(y, return_counts=True)
         p_x = counts / y.size
-        entropy = -np.sum(p_x * np.log2(p_x + 1e-20))
+        entropy = -np.sum(p_x * np.log2(p_x))
         return entropy
 
     def _evaluate_information_gain(self, current_entropy, y_left, y_right):
