@@ -25,7 +25,11 @@ class RandomForest(object):
         # create list of trees (forest)
         self.list_of_trees = []
         for i in range(self.number_of_trees):
-            self.list_of_trees.append(self.decision_tree(self.max_branches))
+            if self.max_branches:
+                self.list_of_trees.append(
+                    self.decision_tree(self.max_branches))
+            else:
+                self.list_of_trees.append(self.decision_tree())
             seed()
             attributes_subset = sample(
                 (range(num_of_attributes)),
@@ -38,7 +42,7 @@ class RandomForest(object):
             masked = np.ma.filled(masked, 100)
             self.list_of_trees[i].fit(
                 masked[sample_indices], y[sample_indices])
-            # self.list_of_trees[i].prune(x_val, y_val)
+            self.list_of_trees[i].prune(x_val, y_val)
 
     def predict(self, x):
         list_of_trees_predictions = np.empty(
@@ -62,57 +66,52 @@ x_test, y_test = read_data("data/test.txt")
 x_val, y_val = read_data("data/validation.txt")
 
 
-forest = RandomForest(
-    50, MultiwayDecisionTreeClassifier, div_param=2, max_branches=3
-)
-forest.fit(x_full, y_full, x_val, y_val)
-forest_predictions = forest.predict(x_test)
-print(
-    "\nAccuracy:\n",
-    accuracy(y_test, forest_predictions)
-)
+# forest = RandomForest(
+#     50, MultiwayDecisionTreeClassifier, div_param=2, max_branches=3
+# )
+# forest.fit(x_full, y_full, x_val, y_val)
+# forest_predictions = forest.predict(x_test)
+# print(
+#     "\nAccuracy:\n",
+#     accuracy(y_test, forest_predictions)
+# )
 
-forest = RandomForest(
-    50, MultiwayDecisionTreeClassifier, div_param=3, max_branches=3
-)
-forest.fit(x_full, y_full, x_val, y_val)
-forest_predictions = forest.predict(x_test)
-print(
-    "\nAccuracy:\n",
-    accuracy(y_test, forest_predictions)
-)
+# forest = RandomForest(
+#     50, MultiwayDecisionTreeClassifier, div_param=3, max_branches=3
+# )
+# forest.fit(x_full, y_full, x_val, y_val)
+# forest_predictions = forest.predict(x_test)
+# print(
+#     "\nAccuracy:\n",
+#     accuracy(y_test, forest_predictions)
+# )
 
-forest = RandomForest(
-    50, MultiwayDecisionTreeClassifier, div_param=4, max_branches=3
-)
-forest.fit(x_full, y_full, x_val, y_val)
-forest_predictions = forest.predict(x_test)
-print(
-    "\nAccuracy:\n",
-    accuracy(y_test, forest_predictions)
-)
+# forest = RandomForest(
+#     50, MultiwayDecisionTreeClassifier, div_param=4, max_branches=3
+# )
+# forest.fit(x_full, y_full, x_val, y_val)
+# forest_predictions = forest.predict(x_test)
+# print(
+#     "\nAccuracy:\n",
+#     accuracy(y_test, forest_predictions)
+# )
 
 
-# print("\n ----- RANDOM FOREST MB=2 ----- \n")
-# params = np.linspace(1, 10, 10)
-# mbs = np.linspace(2, 6, 5)
-# print(params)
-# print(mbs)
-# for mb in mbs:
-#     for param in params:
-#         forest = RandomForest(
-#             80, MultiwayDecisionTreeClassifier, div_param=param, max_branches=mb
-#         )
-#         forest.fit(x_full, y_full, x_val, y_val)
-#         forest_predictions = forest.predict(x_test)
-#         print(
-#             "\nAccuracy:\n",
-#             accuracy(y_test, forest_predictions),
-#             "---------------",
-#             param,
-#             "---------------",
-#             mb,
-#         )
+print("\n ----- RANDOM FOREST MB=2 ----- \n")
+params = np.linspace(10, 1000, 100)
+print(params)
+for param in params:
+    forest = RandomForest(
+        int(param), BinaryDecisionTreeClassifier, div_param=4
+    )
+    forest.fit(x_full, y_full, x_val, y_val)
+    forest_predictions = forest.predict(x_val)
+    print(
+        "\nAccuracy:\n",
+        accuracy(y_val, forest_predictions),
+        "---------------",
+        param
+    )
 
 
 # save_classifiers = open(

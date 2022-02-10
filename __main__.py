@@ -20,7 +20,7 @@ files = {
 
 
 if __name__ == "__main__":
-    x_test, y_test = read_data("data/test.txt")
+    x_test, y_test = read_data("data/validation.txt")
     for key in files:
         classifier_f = open(
             "trained_classifiers/" + files[key] + ".pickle",
