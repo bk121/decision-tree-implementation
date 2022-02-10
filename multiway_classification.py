@@ -329,7 +329,7 @@ class MultiwayDecisionTreeClassifier(object):
                 self.max_branches if self.max_branches else len(possible_split_vals)
             )
             # Try all number of branches
-            for n in range(max_branches):
+            for n in range(max_branches - 1):
                 # Test all the combinations of split values
                 for split_vals in combinations(possible_split_vals, n + 1):
                     # Make split
