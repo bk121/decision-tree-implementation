@@ -16,7 +16,7 @@ Summary of File:
 import numpy as np
 
 
-class BinaryDecisionTreeClassifier(object):
+class DecisionTreeClassifier(object):
     """Basic decision tree classifier
 
     Attributes:
