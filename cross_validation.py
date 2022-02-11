@@ -6,7 +6,7 @@ Last Edit Date: 10/02/2022
 Last Edit By:   Ted Jenks
 
 Public Functions:   k_fold_split(n_splits, n_instances), 
-                    train_test_k_fold(decision_tree_classifier, train_attr, train_labels, test_attr, test_labels, n_splits)
+                    train_test_k_fold(decision_tree_classifier, attributes, labels, n_splits)
 
 Summary of File:
 
@@ -28,14 +28,9 @@ def k_fold_split(n_splits, n_instances):
     return split_indices
 
 
-def train_test_k_fold(
-    decision_tree_classifier, train_attr, train_labels, test_attr, test_labels, n_splits
-):
-    full_attr = np.concatenate((train_attr, test_attr))
-    full_labels = np.concatenate((train_labels, test_labels))
-
+def train_test_k_fold(decision_tree_classifier, attributes, labels, n_splits):
     # Number of total instances to split
-    n_instances = np.shape(full_attr)[0]
+    n_instances = np.shape(attributes)[0]
 
     split_indices = k_fold_split(n_splits, n_instances)
     split_indices = np.array(split_indices)
@@ -55,14 +50,14 @@ def train_test_k_fold(
     fitted_classifiers = []
 
     for i in range(n_splits):
-        x_train = full_attr[folds[i][0]]
-        y_train = full_labels[folds[i][0]]
+        x_train = attributes[folds[i][0]]
+        y_train = labels[folds[i][0]]
 
         decision_tree_classifier.fit(x_train, y_train)
         fitted_classifiers.append(decision_tree_classifier)
 
-        x_test = full_attr[folds[i][1]]
-        y_test = full_labels[folds[i][1]]
+        x_test = attributes[folds[i][1]]
+        y_test = labels[folds[i][1]]
 
         predictions = decision_tree_classifier.predict(x_test)
 

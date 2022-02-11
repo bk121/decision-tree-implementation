@@ -7,30 +7,26 @@ Last Edit By:   Ted Jenks
 
 Public Functions:  
 
-Summary of File: cross_validation_prediction(decision_tree_classifier, train_attr, train_labels, test_attr, test_labels, n_splits)
+Summary of File: cross_validation_prediction(decision_tree_classifier, train_attr, train_labels, test_attr, n_splits)
 
         Contains function for making predictions by combining the predictions of the decision trees produces in 
         the cross-validation process
 """
 
+import numpy as np
 from cross_validation import train_test_k_fold
 from evaluation_metrics import accuracy
-from multiway_classification import MultiwayDecisionTreeClassifier
+from classification import DecisionTreeClassifier
 from read_data import read_data
 
 
 def cross_validation_prediction(
-    decision_tree_classifier, train_attr, train_labels, test_attr, test_labels, n_splits
+    decision_tree_classifier, train_attr, train_labels, test_attr, n_splits
 ):
 
     # Add cross_validation function call here
     accuracies, fitted_classifiers = train_test_k_fold(
-        decision_tree_classifier,
-        train_attr,
-        train_labels,
-        test_attr,
-        test_labels,
-        n_splits,
+        decision_tree_classifier, train_attr, train_labels, n_splits
     )
 
     # Create list of lists with predictions from each of the n classifiers
@@ -40,7 +36,7 @@ def cross_validation_prediction(
 
     # For each row, add to final_predictions the mode of the n classifiers' predictions for that given row
     final_predictions = []
-    for i in range(len(test_labels)):
+    for i in range(len(test_attr)):
         row_predictions = [prediction[i] for prediction in predictions_array]
         row_predictions_mode = max(set(row_predictions), key=row_predictions.count)
         final_predictions.append(row_predictions_mode)
