@@ -54,7 +54,7 @@ and imported them to other files as needed.
 To make it clear how each function or class is being used to generate the results in our report,
 we created a file ``__main__.py`` which produces and prints out the results included in the report. 
 In some cases, there will be small variations as a result of introducing randomness. For example,
-the indicies used for splitting training and test data in cross-validation are generated randomly,
+the indices used for splitting training and test data in cross-validation are generated randomly,
 and so the 10-fold cross validation results will differ slightly every time they are generated.
 
 
