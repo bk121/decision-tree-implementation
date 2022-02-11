@@ -10,7 +10,7 @@ Summary of File:
         Contains main file to run classifier(s).
 """
 
-import binary_classification
+import classification
 import multiway_classification
 from multiway_classification import MultiwayDecisionTreeClassifier
 from read_data import read_data

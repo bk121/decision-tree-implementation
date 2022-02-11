@@ -18,11 +18,21 @@ from evaluation_metrics import accuracy
 from multiway_classification import MultiwayDecisionTreeClassifier
 from read_data import read_data
 
-def cross_validation_prediction(decision_tree_classifier, train_attr, train_labels, test_attr, test_labels, n_splits):
+
+def cross_validation_prediction(
+    decision_tree_classifier, train_attr, train_labels, test_attr, test_labels, n_splits
+):
 
     # Add cross_validation function call here
-    accuracies, fitted_classifiers = train_test_k_fold(decision_tree_classifier, train_attr, train_labels, test_attr, test_labels, n_splits)
-    
+    accuracies, fitted_classifiers = train_test_k_fold(
+        decision_tree_classifier,
+        train_attr,
+        train_labels,
+        test_attr,
+        test_labels,
+        n_splits,
+    )
+
     # Create list of lists with predictions from each of the n classifiers
     predictions_array = []
     for i in range(n_splits):

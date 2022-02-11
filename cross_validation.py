@@ -14,6 +14,7 @@ Summary of File:
 """
 import numpy as np
 
+
 def k_fold_split(n_splits, n_instances):
     # generate random permutation of [0...n_instances] (where n_instances == the total number
     # of data points in your data)
@@ -23,10 +24,13 @@ def k_fold_split(n_splits, n_instances):
     # into n_splits. Note: We use array_split instead of .split() because we may need
     # our permutation into partitions of unequal length (not supported by split())
     split_indices = np.array_split(shuffled_indices, n_splits)
-    
+
     return split_indices
 
-def train_test_k_fold(decision_tree_classifier, train_attr, train_labels, test_attr, test_labels, n_splits):
+
+def train_test_k_fold(
+    decision_tree_classifier, train_attr, train_labels, test_attr, test_labels, n_splits
+):
     full_attr = np.concatenate((train_attr, test_attr))
     full_labels = np.concatenate((train_labels, test_labels))
 
@@ -42,7 +46,7 @@ def train_test_k_fold(decision_tree_classifier, train_attr, train_labels, test_a
         train_indices = np.delete(split_indices, i, 0).flatten()
 
         index_set = [train_indices, test_indices]
-        
+
         folds.append(index_set)
 
     # Currently, folds[] has 10 rows (as per n_splits argument) and 2 columns;

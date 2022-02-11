@@ -14,7 +14,7 @@ Summary of File:
 
 import numpy as np
 from multiway_classification import MultiwayDecisionTreeClassifier
-from binary_classification import BinaryDecisionTreeClassifier
+from classification import DecisionTreeClassifier
 from random_forest import RandomForest
 
 
@@ -44,7 +44,7 @@ def train_and_predict(x_train, y_train, x_test, x_val, y_val):
     y_val (numpy.ndarray): Class labels of validation set, numpy array of shape (L, )
     """
 
-    classifier = RandomForest(150, BinaryDecisionTreeClassifier, 2)
+    classifier = RandomForest(150, DecisionTreeClassifier, 2)
     classifier.fit(x_train, y_train, x_val, y_val)
     predictions = classifier.fit(x_test)
     return predictions
