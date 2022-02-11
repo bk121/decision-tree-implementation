@@ -2,8 +2,8 @@
 File:           __main__.py
 Author:         Jonas Birk, Ted Jenks, Tom Mitcheson, Ben Kirwan
 Creation Date:  31/01/2022
-Last Edit Date: 10/02/2022
-Last Edit By:   Ted Jenks
+Last Edit Date: 11/02/2022
+Last Edit By:   Ben Kirwan
 
 Summary of File:
 
@@ -11,17 +11,14 @@ Summary of File:
 """
 import numpy as np
 from cross_validation_prediction import cross_validation_prediction
-from torch import cross
 from classification import DecisionTreeClassifier
+from random_forest import RandomForest
+from multiway_classification import MultiwayDecisionTreeClassifier
 from read_data import read_data
 from evaluation_metrics import accuracy, confusion_matrix, precision, recall, f1_score
 import pickle
-import matplotlib.pyplot as plt
 import train_classifiers
 from cross_validation import train_test_k_fold
-
-
-
 
 if __name__ == "__main__":
 
@@ -32,6 +29,7 @@ if __name__ == "__main__":
     x_full, y_full = read_data("data/" + files[0])
     x_sub, y_sub = read_data("data/" + files[1])
     x_noisy, y_noisy = read_data("data/" + files[2])
+    x_val, y_val = read_data("data/validation.txt")
     x_test, y_test = read_data("data/test.txt")
 
     x_array = [x_full, x_sub, x_noisy]
@@ -44,7 +42,6 @@ if __name__ == "__main__":
         print(" ", file, ":")
         print("      Attribute array shape (instances, attributes) :", np.shape(x))
         print("      Class label array shape (instances) :", np.shape(y), "\n")
-
 
     print("\nDATA CLASSES")
     print("------------\n")
@@ -60,11 +57,8 @@ if __name__ == "__main__":
         print("\n ", file, ":")
         print("\n Classes Proportions\n", class_proportion)
 
-
-
     print("\nDATA RANGES")
     print("------------\n")
-
 
     range_plot = ["", "", ""]
     for j, (file, x, y) in enumerate(zip(files, x_array, y_array)):
@@ -85,7 +79,6 @@ if __name__ == "__main__":
             ranges[i] = np.max(column) - np.min(column)
         range_plot[j] = ranges
 
-
     print("\nNOISY/FULL COMPARISON")
     print("---------------------\n")
 
@@ -101,99 +94,324 @@ if __name__ == "__main__":
 
     print("     ", proportion)
 
-
     print("\n\n-------------Implementing A Decision Tree--------------\n\n")
     print("\nTraining binary classifiers...\n")
-    tree_names=["bin_full", "bin_sub", "bin_noisy"]
-    class_files=["trained_classifiers/"+tree_name+".pickle" for tree_name in tree_names]
-    data_files=["data/"+file for file in files]
+    tree_names = ["bin_full", "bin_sub", "bin_noisy"]
+    class_files = [
+        "trained_classifiers/" + tree_name + ".pickle" for tree_name in tree_names
+    ]
+    data_files = ["data/" + file for file in files]
     train_classifiers.binary_train(tree_names, class_files, data_files)
     print("\nBinary classifiers trained!\n")
-
 
     print("\n\n-------------Evaluation Metrics--------------\n\n")
 
     print("\nConfusion Matrices:\n")
-    trees=[]
+    trees = []
     for class_file, data_file, tree in zip(class_files, data_files, tree_names):
-        print("\nConfusion matrix for Binary decision tree (Trained on "+data_file+"):")
-        classifier=open(class_file, "rb")
-        tree=pickle.load(classifier)
+        print(
+            "\nConfusion matrix for Binary decision tree (Trained on "
+            + data_file
+            + "):"
+        )
+        classifier = open(class_file, "rb")
+        tree = pickle.load(classifier)
         trees.append(tree)
         classifier.close()
         print(confusion_matrix(y_test, tree.predict(x_test)))
 
     print("\n\n\nMetrics per label for each decision tree:")
-    macros=[]
+    macros = []
     for tree, file in zip(trees, files):
-        tree_prediction=tree.predict(x_test)
-        letters=np.array(classes)
-        tree_precision=np.around(precision(y_test, tree_prediction)[0], 3)
-        macro_precision=np.around(precision(y_test, tree_prediction)[1], 3)
-        tree_recall=np.around(recall(y_test, tree_prediction)[0], 3)
-        macro_recall=np.around(recall(y_test, tree_prediction)[1], 3)
-        tree_f1_score=np.around(f1_score(y_test, tree_prediction)[0], 3)
-        macro_f1_score=np.around(f1_score(y_test, tree_prediction)[1], 3)
-        table=np.stack((letters, tree_precision, tree_recall, tree_f1_score),1)
-        metrics=np.array([["Label", "Precision", "Recall", "F1-score"]])
-        table=np.concatenate((metrics, table))
-        tree_accuracy=accuracy(y_test, tree_prediction)
-        macros.append(np.array([file, tree_accuracy, macro_precision, macro_recall, macro_f1_score]))
-        print("\n\n Evaluation metrics for binary decision tree trained on "+file+":")
+        tree_prediction = tree.predict(x_test)
+        letters = np.array(classes)
+        tree_precision = np.around(precision(y_test, tree_prediction)[0], 3)
+        macro_precision = np.around(precision(y_test, tree_prediction)[1], 3)
+        tree_recall = np.around(recall(y_test, tree_prediction)[0], 3)
+        macro_recall = np.around(recall(y_test, tree_prediction)[1], 3)
+        tree_f1_score = np.around(f1_score(y_test, tree_prediction)[0], 3)
+        macro_f1_score = np.around(f1_score(y_test, tree_prediction)[1], 3)
+        table = np.stack((letters, tree_precision, tree_recall, tree_f1_score), 1)
+        metrics = np.array([["Label", "Precision", "Recall", "F1-score"]])
+        table = np.concatenate((metrics, table))
+        tree_accuracy = accuracy(y_test, tree_prediction)
+        macros.append(
+            np.array(
+                [file, tree_accuracy, macro_precision, macro_recall, macro_f1_score]
+            )
+        )
+        print(
+            "\n\n Evaluation metrics for binary decision tree trained on " + file + ":"
+        )
         print(table)
-    
+
     print("\n\nMacros for each decision tree:")
-    top_row=np.array([["Dataset", "Accuracy", "Precision", "Recall", "F1-score"]])
-    table=np.stack((macros[0], macros[1], macros[2]),0)
-    table=np.concatenate((top_row, table))
+    top_row = np.array([["Dataset", "Accuracy", "Precision", "Recall", "F1-score"]])
+    table = np.stack((macros[0], macros[1], macros[2]), 0)
+    table = np.concatenate((top_row, table))
     print(table)
-    
+
     print("\n\n\nClassifier Accuracy in 10-Fold Cross-Validation:")
     decisionTreeClassifier = DecisionTreeClassifier()
     n_splits = 10
-    accuracies, fitted_classifiers = train_test_k_fold(decisionTreeClassifier, x_full, y_full, n_splits)
+    accuracies, fitted_classifiers = train_test_k_fold(
+        decisionTreeClassifier, x_full, y_full, n_splits
+    )
     for i in range(10):
         print(accuracies[i])
 
     print("Average accuracy: {}".format(np.mean(accuracies)))
     print("Average standard deviation: {}".format(np.std(accuracies)))
 
-    print("\n\n\nAccuracy of combining predictions from 10 decision trees generated by cross validation:")
+    print(
+        "\n\n-------------Evaluation of combining predictions from 10 decision trees generated by cross validation-------------\n\n"
+    )
     newDecisionTreeClassifier = DecisionTreeClassifier()
-    cross_validated_predictions = cross_validation_prediction(newDecisionTreeClassifier, x_full, y_full, x_test, n_splits)
-    print(accuracy(y_test, cross_validated_predictions))
+    predictions = cross_validation_prediction(
+        newDecisionTreeClassifier, x_full, y_full, x_test, n_splits
+    )
+    print(confusion_matrix(y_test, predictions))
 
+    macros = []
+    letters = np.array(classes)
+    tree_precision = np.around(precision(y_test, predictions)[0], 3)
+    macro_precision = np.around(precision(y_test, predictions)[1], 3)
+    tree_recall = np.around(recall(y_test, predictions)[0], 3)
+    macro_recall = np.around(recall(y_test, predictions)[1], 3)
+    tree_f1_score = np.around(f1_score(y_test, predictions)[0], 3)
+    macro_f1_score = np.around(f1_score(y_test, predictions)[1], 3)
+    table = np.stack((letters, tree_precision, tree_recall, tree_f1_score), 1)
+    metrics = np.array([["Label", "Precision", "Recall", "F1-score"]])
+    table = np.concatenate((metrics, table))
+    tree_accuracy = accuracy(y_test, predictions)
+    macros.append(
+        np.array([tree_accuracy, macro_precision, macro_recall, macro_f1_score])
+    )
+    print("\n\n Evaluation metrics for cross validation predicstions:")
+    print(table)
 
-# files = {
-#     "binary": "binary",
-#     "pruned binary": "binary-pruned",
-#     "max two branch multiway": "mw-two-way",
-#     "pruned max two branch multiway": "mw-two-way-pruned",
-#     "max three branch multiway": "mw-three-way",
-#     "pruned max three branch multiway": "mw-three-way-pruned",
-#     "max four branch multiway": "mw-four-way",
-#     "pruned max four branch multiway": "mw-four-way-pruned",
-#     "no limit multiway": "mw-inf-way",
-#     "pruned no limit multiway": "mw-inf-way-pruned",
-# }
+    print(
+        "\n\n-------------Implementing A 4-Branch Multiway Decision Tree--------------\n\n"
+    )
+    print("\nTraining multiway classifier...\n")
+    classifier = MultiwayDecisionTreeClassifier(max_branches=4)
+    classifier.fit(x_full, y_full)
 
-    # x_test, y_test = read_data("data/test.txt")
-    # for key in files:
-    #     classifier_f = open(
-    #         "trained_classifiers/" + files[key] + ".pickle",
-    #         "rb",
-    #     )
-    #     classifier = pickle.load(classifier_f)
-    #     classifier_f.close()
-    #     print(
-    #         "\n\n-------------------------------------------"
-    #         + "----------------------------------------------------------\n"
-    #     )
-    #     print("\nAnalysis for", key, "decision tree:\n\n")
-    #     predictions = classifier.predict(x_test)
-    #     print("\nAccuracy:\n", accuracy(y_test, predictions))
-    #     print("\nConfusion Matrix:\n", confusion_matrix(y_test, predictions))
-    #     print("\nPrecision:\n", precision(y_test, predictions))
-    #     print("\nRecall:\n", recall(y_test, predictions))
-    #     print("\nF1_Score:\n", f1_score(y_test, predictions))
-    #     print("\nNode Count:\n", classifier.node_count)
+    save_cl = open("trained_classifiers/four_way_multiway.pickle", "wb")
+    pickle.dump(classifier, save_cl)
+    save_cl.close()
+
+    print("\nMultiway classifier trained!\n")
+
+    print(
+        "\n\n-------------4 Branch Multiway Tree Evaluation Metrics--------------\n\n"
+    )
+
+    print("\nConfusion Matrix:\n")
+
+    classifier_f = open("trained_classifiers/four_way_multiway.pickle", "rb")
+    classifier = pickle.load(classifier_f)
+    classifier_f.close()
+
+    predictions = classifier.predict(x_test)
+    print(confusion_matrix(y_test, predictions))
+
+    macros = []
+    letters = np.array(classes)
+    tree_precision = np.around(precision(y_test, predictions)[0], 3)
+    macro_precision = np.around(precision(y_test, predictions)[1], 3)
+    tree_recall = np.around(recall(y_test, predictions)[0], 3)
+    macro_recall = np.around(recall(y_test, predictions)[1], 3)
+    tree_f1_score = np.around(f1_score(y_test, predictions)[0], 3)
+    macro_f1_score = np.around(f1_score(y_test, predictions)[1], 3)
+    table = np.stack((letters, tree_precision, tree_recall, tree_f1_score), 1)
+    metrics = np.array([["Label", "Precision", "Recall", "F1-score"]])
+    table = np.concatenate((metrics, table))
+    tree_accuracy = accuracy(y_test, predictions)
+    macros.append(
+        np.array([tree_accuracy, macro_precision, macro_recall, macro_f1_score])
+    )
+    print("\n\n Evaluation metrics for a 4 branch multiway tree:")
+    print(table)
+
+    print("\n\nMacros for multiway decision tree:")
+    top_row = np.array([["Accuracy", "Precision", "Recall", "F1-score"]])
+    table = np.concatenate((top_row, macros))
+    print(table)
+
+    print(
+        "\n\n-------------Implementing An Unconstrained Multiway Decision Tree--------------\n\n"
+    )
+    print("\nTraining multiway classifier...\n")
+    classifier = MultiwayDecisionTreeClassifier()
+    classifier.fit(x_full, y_full)
+
+    save_cl = open("trained_classifiers/unconstrained_multiway.pickle", "wb")
+    pickle.dump(classifier, save_cl)
+    save_cl.close()
+
+    print("\nMultiway classifier trained!\n")
+
+    print(
+        "\n\n-------------Unconstrained Multiway Tree Evaluation Metrics--------------\n\n"
+    )
+
+    print("\nConfusion Matrix:\n")
+
+    classifier_f = open("trained_classifiers/unconstrained_multiway.pickle", "rb")
+    classifier = pickle.load(classifier_f)
+    classifier_f.close()
+
+    predictions = classifier.predict(x_test)
+    print(confusion_matrix(y_test, predictions))
+
+    macros = []
+    letters = np.array(classes)
+    tree_precision = np.around(precision(y_test, predictions)[0], 3)
+    macro_precision = np.around(precision(y_test, predictions)[1], 3)
+    tree_recall = np.around(recall(y_test, predictions)[0], 3)
+    macro_recall = np.around(recall(y_test, predictions)[1], 3)
+    tree_f1_score = np.around(f1_score(y_test, predictions)[0], 3)
+    macro_f1_score = np.around(f1_score(y_test, predictions)[1], 3)
+    table = np.stack((letters, tree_precision, tree_recall, tree_f1_score), 1)
+    metrics = np.array([["Label", "Precision", "Recall", "F1-score"]])
+    table = np.concatenate((metrics, table))
+    tree_accuracy = accuracy(y_test, predictions)
+    macros.append(
+        np.array([tree_accuracy, macro_precision, macro_recall, macro_f1_score])
+    )
+    print(
+        "\n\n Evaluation metrics for an unconstrained decision tree trained on train_full.txt:"
+    )
+    print(table)
+
+    print("\n\nMacros for multiway decision tree:")
+    top_row = np.array([["Accuracy", "Precision", "Recall", "F1-score"]])
+    table = np.concatenate((top_row, macros))
+    print(table)
+
+    print("\n\n-------------Pruning A Binary Decision Tree--------------\n\n")
+
+    indexes = [0, 2]
+    for i in indexes:
+        tree = trees[i]
+        file = files[i]
+        print("\n\n Pruning a binary tree trained on " + file + ":\n")
+        prior_node_count = tree.node_count
+        predictions_v = tree.predict(x_val)
+        prior_acc_v = accuracy(y_val, predictions_v)
+        predictions_t = tree.predict(x_test)
+        prior_acc_t = accuracy(y_test, predictions_t)
+        tree.prune(x_val, y_val)
+        post_node_count = tree.node_count
+        predictions_v = tree.predict(x_val)
+        post_acc_v = accuracy(y_val, predictions_v)
+        predictions_t = tree.predict(x_test)
+        post_acc_t = accuracy(y_test, predictions_t)
+        print("     Prior accuracy on validation set:", prior_acc_v)
+        print("     Prior accuracy on test set:", prior_acc_t)
+        print("     Prior node count:", prior_node_count)
+        print("\n     Post accuracy on validation set:", post_acc_v)
+        print("     Post accuracy on test set:", post_acc_t)
+        print("     Post node count:", post_node_count)
+
+    print(
+        "\n\n-------------Pruning A four Way Multiway Decision Tree--------------\n\n"
+    )
+
+    classifier_f = open("trained_classifiers/four_way_multiway.pickle", "rb")
+    classifier = pickle.load(classifier_f)
+    classifier_f.close()
+
+    tree = classifier
+    prior_node_count = tree.node_count
+    predictions_v = tree.predict(x_val)
+    prior_acc_v = accuracy(y_val, predictions_v)
+    predictions_t = tree.predict(x_test)
+    prior_acc_t = accuracy(y_test, predictions_t)
+    tree.prune(x_val, y_val)
+    post_node_count = tree.node_count
+    predictions_v = tree.predict(x_val)
+    post_acc_v = accuracy(y_val, predictions_v)
+    predictions_t = tree.predict(x_test)
+    post_acc_t = accuracy(y_test, predictions_t)
+    print("     Prior accuracy on validation set:", prior_acc_v)
+    print("     Prior accuracy on test set:", prior_acc_v)
+    print("     Prior node count:", prior_node_count)
+    print("\n     Post accuracy on validation set:", post_acc_v)
+    print("     Post accuracy on test set:", post_acc_v)
+    print("     Post node count:", post_node_count)
+
+    print(
+        "\n\n-------------Pruning An Unconstrained Multiway Decision Tree--------------\n\n"
+    )
+
+    classifier_f = open("trained_classifiers/unconstrained_multiway.pickle", "rb")
+    classifier = pickle.load(classifier_f)
+    classifier_f.close()
+
+    tree = classifier
+    prior_node_count = tree.node_count
+    predictions_v = tree.predict(x_val)
+    prior_acc_v = accuracy(y_val, predictions_v)
+    predictions_t = tree.predict(x_test)
+    prior_acc_t = accuracy(y_test, predictions_t)
+    tree.prune(x_val, y_val)
+    post_node_count = tree.node_count
+    predictions_v = tree.predict(x_val)
+    post_acc_v = accuracy(y_val, predictions_v)
+    predictions_t = tree.predict(x_test)
+    post_acc_t = accuracy(y_test, predictions_t)
+    print("     Prior accuracy on validation set:", prior_acc_v)
+    print("     Prior accuracy on test set:", prior_acc_v)
+    print("     Prior node count:", prior_node_count)
+    print("\n     Post accuracy on validation set:", post_acc_v)
+    print("     Post accuracy on test set:", post_acc_v)
+    print("     Post node count:", post_node_count)
+
+    print("\n\n-------------Implementing A Random Decision Forest--------------\n\n")
+    print("\nTraining random decision forest...\n")
+    classifier = RandomForest(50, DecisionTreeClassifier, 3)
+    classifier.fit(x_full, y_full, x_val, y_val)
+
+    save_cl = open("trained_classifiers/random_decision_forest.pickle", "wb")
+    pickle.dump(classifier, save_cl)
+    save_cl.close()
+
+    print("\nRandom decision forest trained!\n")
+
+    print(
+        "\n\n-------------Random Decision Forest Evaluation Metrics--------------\n\n"
+    )
+
+    classifier_f = open("trained_classifiers/random_decision_forest.pickle", "rb")
+    classifier = pickle.load(classifier_f)
+    classifier_f.close()
+
+    print("\nConfusion Matrix:\n")
+
+    predictions = classifier.predict(x_test)
+    print(confusion_matrix(y_test, predictions))
+
+    macros = []
+    letters = np.array(classes)
+    tree_precision = np.around(precision(y_test, predictions)[0], 3)
+    macro_precision = np.around(precision(y_test, predictions)[1], 3)
+    tree_recall = np.around(recall(y_test, predictions)[0], 3)
+    macro_recall = np.around(recall(y_test, predictions)[1], 3)
+    tree_f1_score = np.around(f1_score(y_test, predictions)[0], 3)
+    macro_f1_score = np.around(f1_score(y_test, predictions)[1], 3)
+    table = np.stack((letters, tree_precision, tree_recall, tree_f1_score), 1)
+    metrics = np.array([["Label", "Precision", "Recall", "F1-score"]])
+    table = np.concatenate((metrics, table))
+    tree_accuracy = accuracy(y_test, predictions)
+    macros.append(
+        np.array([tree_accuracy, macro_precision, macro_recall, macro_f1_score])
+    )
+    print("\n\n Evaluation metrics for random decision forest:")
+    print(table)
+
+    print("\n\nMacros for random decision forest:")
+    top_row = np.array([["Accuracy", "Precision", "Recall", "F1-score"]])
+    table = np.concatenate((top_row, macros))
+    print(table)
