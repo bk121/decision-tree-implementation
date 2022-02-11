@@ -336,10 +336,10 @@ if __name__ == "__main__":
     predictions_t = tree.predict(x_test)
     post_acc_t = accuracy(y_test, predictions_t)
     print("     Prior accuracy on validation set:", prior_acc_v)
-    print("     Prior accuracy on test set:", prior_acc_v)
+    print("     Prior accuracy on test set:", prior_acc_t)
     print("     Prior node count:", prior_node_count)
     print("\n     Post accuracy on validation set:", post_acc_v)
-    print("     Post accuracy on test set:", post_acc_v)
+    print("     Post accuracy on test set:", post_acc_t)
     print("     Post node count:", post_node_count)
 
     print(
@@ -363,10 +363,10 @@ if __name__ == "__main__":
     predictions_t = tree.predict(x_test)
     post_acc_t = accuracy(y_test, predictions_t)
     print("     Prior accuracy on validation set:", prior_acc_v)
-    print("     Prior accuracy on test set:", prior_acc_v)
+    print("     Prior accuracy on test set:", prior_acc_t)
     print("     Prior node count:", prior_node_count)
     print("\n     Post accuracy on validation set:", post_acc_v)
-    print("     Post accuracy on test set:", post_acc_v)
+    print("     Post accuracy on test set:", post_acc_t)
     print("     Post node count:", post_node_count)
 
     print("\n\n-------------Implementing A Random Decision Forest--------------\n\n")
