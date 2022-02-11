@@ -46,5 +46,5 @@ def train_and_predict(x_train, y_train, x_test, x_val, y_val):
 
     classifier = RandomForest(150, DecisionTreeClassifier, 2)
     classifier.fit(x_train, y_train, x_val, y_val)
-    predictions = classifier.fit(x_test)
+    predictions = classifier.predict(x_test)
     return predictions
